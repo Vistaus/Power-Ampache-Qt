@@ -1,0 +1,15 @@
+{
+    "name": "powerampache.icefields",
+    "description": "Ampache music client for Ubuntu Touch",
+    "architecture": "$ENV{ARCH}",
+    "title": "Power Ampache",
+    "hooks": {
+        "powerampache": {
+            "apparmor": "powerampache.apparmor",
+            "desktop":  "powerampache.desktop"
+        }
+    },
+    "version": "1.0.0",
+    "maintainer": "icefields <arctic.icefields@slmails.com>",
+    "framework" : "$ENV{CLICK_FRAMEWORK}"
+}

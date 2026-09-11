@@ -1,0 +1,23 @@
+.venv/
+.env*
+*_state.json
+musicdb.db
+*.db-journal
+*.db-wal
+.env
+*.pem
+*.key
+secrets/
+CONVENTIONS.md
+aider-ampache-tutorial.md
+
+# Packaging artifacts
+*.egg-info/
+dist/
+
+
+/build/
+/.clickable/
+.aider*
+__pycache__/
+*.pyc
