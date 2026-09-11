@@ -54,18 +54,6 @@ MainView {
         id: audio
         // No auto-play: source is set only by queueManager.
 
-        onStatusChanged: {
-            // Device-only workaround: the UT/Android backend can swallow
-            // the first play() while acquiring audio focus. Re-issuing
-            // play() once the media is buffered is a no-op when playback
-            // already started; desktop behavior is unchanged.
-            if (status === MediaPlayer.Buffered
-                    && queueManager.playbackKickPending) {
-                queueManager.playbackKickPending = false
-                audio.play()
-            }
-        }
-
         onStopped: {
             // Natural end goes through queueManager.onNaturalEnd() (repeat
             // 'one' replays there, and ONLY there). Setting a new source
@@ -74,6 +62,24 @@ MainView {
                 queueManager.onNaturalEnd()
             }
         }
+    }
+
+    // Watchdog for the device-only media-hub first-play swallow: the hub
+    // session drops play() until a pause() has primed its state machine.
+    // 2s after every play() we check whether playback actually advanced.
+    Timer {
+        id: playWatchdog
+        interval: 2000
+        onTriggered: queueManager.playWatchdogCheck()
+    }
+
+    // The kick itself: pause() then play(), the sequence proven to work
+    // manually. 500ms gap — the manual working gap was ~1s; too short
+    // may race the hub's pause state transition.
+    Timer {
+        id: playKick
+        interval: 500
+        onTriggered: audio.play()
     }
 
     QtObject {
@@ -228,12 +234,31 @@ MainView {
             python.call('bridge.getStreamUrl', [song.id], function(result) {
                 if (result && result.ok) {
                     audio.source = result.url
-                    playbackKickPending = true
                     audio.play()
+                    playbackKickPending = true
+                    playWatchdog.restart()
                 }
                 // On failure leave the player stopped; session 3 owns error
                 // surfacing.
             })
+        }
+
+        // Watchdog check, 2s after every play(). Guards:
+        // - desktop advances position within 2s -> position >= 250ms, no kick;
+        // - slow network shows Buffering/Stalled, not Buffered -> no kick;
+        // - device swallowed play shows Buffered + frozen position ->
+        //   pause+play kick, which the hub accepts.
+        // One kick attempt only, never a loop: playbackKickPending is
+        // cleared before any kick.
+        function playWatchdogCheck() {
+            if (!playbackKickPending) {
+                return
+            }
+            playbackKickPending = false
+            if (audio.status === MediaPlayer.Buffered && audio.position < 250) {
+                audio.pause()
+                playKick.restart()
+            }
         }
     }
 
