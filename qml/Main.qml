@@ -74,11 +74,11 @@ MainView {
     }
 
     // The kick itself: pause() then play(), the sequence proven to work
-    // manually. 500ms gap — the manual working gap was ~1s; too short
-    // may race the hub's pause state transition.
+    // manually. 1000ms gap — replicates the twice-proven manual gap from
+    // the device logs; shorter may race the hub's pause state transition.
     Timer {
         id: playKick
-        interval: 500
+        interval: 1000
         onTriggered: audio.play()
     }
 
@@ -243,11 +243,11 @@ MainView {
             })
         }
 
-        // Watchdog check, 2s after every play(). Guards:
-        // - desktop advances position within 2s -> position >= 250ms, no kick;
-        // - slow network shows Buffering/Stalled, not Buffered -> no kick;
-        // - device swallowed play shows Buffered + frozen position ->
-        //   pause+play kick, which the hub accepts.
+        // Watchdog check, 2s after every play(). Device-proven signatures:
+        // - swallowed play: PausedState + position frozen at 0 -> the
+        //   pause+play kick, which the hub accepts;
+        // - working play: PlayingState + advancing position -> no kick
+        //   (desktop and normal starts).
         // One kick attempt only, never a loop: playbackKickPending is
         // cleared before any kick.
         function playWatchdogCheck() {
@@ -255,7 +255,7 @@ MainView {
                 return
             }
             playbackKickPending = false
-            if (audio.status === MediaPlayer.Buffered && audio.position < 250) {
+            if (audio.playbackState === MediaPlayer.PausedState && audio.position < 250) {
                 audio.pause()
                 playKick.restart()
             }
