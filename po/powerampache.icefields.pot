@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 20:22+0000\n"
+"POT-Creation-Date: 2026-09-11 21:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,79 +17,79 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:60
+#: ../qml/Main.qml:234
 msgid "Internal error"
 msgstr ""
 
-#: ../qml/Main.qml:70 ../qml/Main.qml:160 ../qml/Main.qml:340
+#: ../qml/Main.qml:244 ../qml/Main.qml:334 ../qml/Main.qml:628
 #: powerampache.desktop.in.h:1
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/Main.qml:84
+#: ../qml/Main.qml:258
 msgid "Connect to your Ampache server"
 msgstr ""
 
-#: ../qml/Main.qml:90
+#: ../qml/Main.qml:264
 msgid "Server URL"
 msgstr ""
 
-#: ../qml/Main.qml:97
+#: ../qml/Main.qml:271
 msgid "Username"
 msgstr ""
 
-#: ../qml/Main.qml:103
+#: ../qml/Main.qml:277
 msgid "Password"
 msgstr ""
 
-#: ../qml/Main.qml:119
+#: ../qml/Main.qml:293
 msgid "Connect"
 msgstr ""
 
-#: ../qml/Main.qml:129
+#: ../qml/Main.qml:303
 msgid "Could not save credentials"
 msgstr ""
 
-#: ../qml/Main.qml:140
+#: ../qml/Main.qml:314
 msgid "Wrong username or password"
 msgstr ""
 
-#: ../qml/Main.qml:142
+#: ../qml/Main.qml:316
 msgid "Server unreachable"
 msgstr ""
 
-#: ../qml/Main.qml:144
+#: ../qml/Main.qml:318
 msgid "Connection failed"
 msgstr ""
 
-#: ../qml/Main.qml:189
+#: ../qml/Main.qml:363
 msgid "Offline — showing cached music"
 msgstr ""
 
-#: ../qml/Main.qml:196
+#: ../qml/Main.qml:370
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/Main.qml:197
+#: ../qml/Main.qml:371
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/Main.qml:198
+#: ../qml/Main.qml:372
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/Main.qml:199
+#: ../qml/Main.qml:373
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/Main.qml:200
+#: ../qml/Main.qml:374
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/Main.qml:201
+#: ../qml/Main.qml:375
 msgid "Random"
 msgstr ""
 
-#: ../qml/Main.qml:337
+#: ../qml/Main.qml:625
 msgid "Could not open the local database"
 msgstr ""
