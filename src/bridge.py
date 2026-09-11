@@ -129,6 +129,20 @@ def _albumDict(album):
     }
 
 
+def _songDict(song):
+    "Map a Song domain object to a plain dict for QML."
+    return {
+        'id': song.id,
+        'title': song.title,
+        'trackNumber': song.trackNumber,
+        'artistName': song.artistName,
+        'albumId': song.albumId,
+        'albumName': song.albumName,
+        'time': song.time,
+        'imageUrl': song.imageUrl,
+    }
+
+
 def _albumList(fetcher):
     "Run a limit-bounded fetch; the library persists the response and reads back from the cache."
     try:
@@ -190,3 +204,43 @@ def getNewestAlbums(limit=_DEFAULT_LIMIT):
 def getRandomAlbums(limit=_DEFAULT_LIMIT):
     "Home row 6: random."
     return _albumList(lambda client: client.getRandomAlbums(limit=limit))
+
+
+def getAlbumSongs(albumId):
+    "Album drill-down: the album's tracks in the order the response gives, never re-sorted."
+    try:
+        client = getClient()
+        songs = client.getAlbumSongs(albumId)
+        return {'ok': True, 'songs': [_songDict(song) for song in songs]}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getFirstCachedSongId():
+    "Playback spike helper: the first cached song id, or None when the cache is empty. Read-only direct sqlite, same pattern as getFavouriteAlbums."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songId': None}
+        connection = sqlite3.connect(dbPath)
+        try:
+            cursor = connection.execute('SELECT mediaId FROM SongEntity LIMIT 1')
+            row = cursor.fetchone()
+            return {'ok': True, 'songId': row[0] if row else None}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getStreamUrl(songId, stats=None):
+    """Return a stream URL for the built-in player. The stats argument
+    passes through verbatim: real plays omit it (the library default
+    records the play), the spike passes 0. The URL embeds the live
+    session token — never log it, never persist it."""
+    try:
+        client = getClient()
+        url = client.getStreamUrl(songId, stats=stats)
+        return {'ok': True, 'url': url}
+    except Exception as exception:
+        return _errorDict(exception)
