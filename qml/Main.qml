@@ -36,42 +36,20 @@ MainView {
         return minutes + ':' + (remainder < 10 ? '0' : '') + remainder
     }
 
-    // SPIKE — session 2 playback smoke test: play the first cached song to
-    // prove the stream path end to end. stats=0: a spike must NEVER record
-    // a play. Session 3 replaces this with the real player flow, in which
-    // queueManager owns all playback. Empty cache: skip silently.
-    function runPlaybackSpike() {
-        python.call('bridge.getFirstCachedSongId', [], function(result) {
-            if (!result || !result.ok || !result.songId) {
-                return
-            }
-            python.call('bridge.getStreamUrl', [result.songId, 0], function(urlResult) {
-                if (!urlResult || !urlResult.ok) {
-                    return
-                }
-                if (queueManager.currentIndex >= 0) {
-                    // A real play already started; do not stomp it.
-                    return
-                }
-                audio.source = urlResult.url
-                audio.play()
-            })
-        })
-    }
-
     PageStack {
         id: pageStack
     }
 
     Audio {
         id: audio
-        // No auto-play: source is set only by the SPIKE or by queueManager.
+        // No auto-play: source is set only by queueManager.
 
         onStopped: {
-            // Natural end advances the queue. Setting a new source also
-            // stops playback, so gate strictly on EndOfMedia.
+            // Natural end goes through queueManager.onNaturalEnd() (repeat
+            // 'one' replays there, and ONLY there). Setting a new source
+            // also stops playback, so gate strictly on EndOfMedia.
             if (status === MediaPlayer.EndOfMedia) {
-                queueManager.next()
+                queueManager.onNaturalEnd()
             }
         }
     }
@@ -81,10 +59,16 @@ MainView {
 
         // The ONE owner of play order. queue holds song dicts as returned
         // by bridge.getAlbumSongs (id, title, trackNumber, artistName,
-        // albumId, albumName, time, imageUrl). Shuffle, repeat modes and
-        // queue editing are session 3.
+        // albumId, albumName, time, imageUrl).
+        // comes NEXT without mutating the queue; repeat is 'off' | 'all'
+        // | 'one'. Queue editing is future work.
         property var queue: []
         property int currentIndex: -1
+        property bool shuffle: false
+        property string repeat: 'off'   // 'off' | 'all' | 'one'
+        // Indices already played in shuffle mode: no repeats until the
+        // queue is exhausted. Reset by playFrom() and toggleShuffle().
+        property var playedIndices: []
         readonly property var currentSong: (currentIndex >= 0 && currentIndex < queue.length) ? queue[currentIndex] : null
         readonly property bool playing: audio.playbackState === MediaPlayer.PlayingState
 
@@ -93,6 +77,7 @@ MainView {
         function playFrom(list, startIndex) {
             queue = list
             currentIndex = startIndex
+            playedIndices = [startIndex]
             playCurrentSong()
         }
 
@@ -104,21 +89,99 @@ MainView {
             }
         }
 
+        function toggleShuffle() {
+            shuffle = !shuffle
+            // Re-seed the played-set with the current song so it is never
+            // re-picked (randomUnplayedIndex also excludes it directly).
+            playedIndices = currentIndex >= 0 ? [currentIndex] : []
+        }
+
+        function cycleRepeat() {
+            repeat = repeat === 'off' ? 'all' : (repeat === 'all' ? 'one' : 'off')
+        }
+
+        // A random queue index not yet played in shuffle mode; -1 when the
+        // queue is exhausted. Never returns the current index.
+        function randomUnplayedIndex() {
+            var unplayed = []
+            for (var i = 0; i < queue.length; i++) {
+                if (i !== currentIndex && playedIndices.indexOf(i) === -1) {
+                    unplayed.push(i)
+                }
+            }
+            if (unplayed.length === 0) {
+                return -1
+            }
+            return unplayed[Math.floor(Math.random() * unplayed.length)]
+        }
+
+        // Natural end of a song (Audio EndOfMedia). Repeat 'one' replays
+        // here and ONLY here — manual prev/next taps always move.
+        function onNaturalEnd() {
+            if (repeat === 'one' && currentSong !== null) {
+                // Seek-restart, not playCurrentSong(): re-fetching the URL
+                // with default stats would record a second play.
+                audio.seek(0)
+                audio.play()
+                return
+            }
+            next()
+        }
+
+        // Shared end-of-queue behavior for next(): repeat 'all' wraps to
+        // the top, everything else keeps the stop-and-clear behavior.
+        function handleQueueEnd() {
+            if (repeat === 'all' && queue.length > 0) {
+                currentIndex = 0
+                playedIndices = [0]
+                playCurrentSong()
+            } else {
+                audio.stop()
+                currentIndex = -1
+            }
+        }
+
         function next() {
             if (currentIndex < 0) {
+                return
+            }
+            if (shuffle) {
+                var shuffledIndex = randomUnplayedIndex()
+                if (shuffledIndex >= 0) {
+                    currentIndex = shuffledIndex
+                    playedIndices.push(shuffledIndex)
+                    playCurrentSong()
+                } else {
+                    // Every song played: shuffle's end-of-queue.
+                    handleQueueEnd()
+                }
                 return
             }
             if (currentIndex + 1 < queue.length) {
                 currentIndex = currentIndex + 1
                 playCurrentSong()
             } else {
-                // End of the queue: stop and clear the current song.
-                audio.stop()
-                currentIndex = -1
+                handleQueueEnd()
             }
         }
 
         function prev() {
+            if (currentIndex < 0) {
+                return
+            }
+            if (shuffle) {
+                var shuffledIndex = randomUnplayedIndex()
+                if (shuffledIndex >= 0) {
+                    currentIndex = shuffledIndex
+                    playedIndices.push(shuffledIndex)
+                    playCurrentSong()
+                } else if (currentSong !== null) {
+                    // Nothing unplayed: restart the current song, mirroring
+                    // the first-track case below.
+                    audio.seek(0)
+                }
+                return
+            }
             if (currentIndex > 0) {
                 currentIndex = currentIndex - 1
                 playCurrentSong()
@@ -135,7 +198,7 @@ MainView {
                 return
             }
             // DEFAULT stats (stats argument omitted on purpose): real user
-            // plays feed the listen history. Only the SPIKE passes stats=0.
+            // plays feed the listen history. any test or prefetch must pass stats=0.
             // Never log result.url — it embeds the session token.
             python.call('bridge.getStreamUrl', [song.id], function(result) {
                 if (result && result.ok) {
@@ -148,8 +211,8 @@ MainView {
         }
     }
 
-    // Now-playing mini-bar. Session 3: tapping it pushes the full player
-    // page; for now it is display plus play/pause only.
+    // Now-playing mini-bar: prev / play-pause / next; tapping the
+    // title/artist area pushes the full player page.
     Rectangle {
         id: miniBar
         visible: queueManager.currentSong !== null
@@ -162,10 +225,11 @@ MainView {
         color: theme.palette.normal.base
 
         Column {
+            id: miniBarText
             anchors {
                 left: parent.left
                 leftMargin: units.gu(2)
-                right: playPauseIcon.left
+                right: miniBarControls.left
                 rightMargin: units.gu(1)
                 verticalCenter: parent.verticalCenter
             }
@@ -185,20 +249,63 @@ MainView {
             }
         }
 
-        Icon {
-            id: playPauseIcon
+        // Tap target that opens the player page: everything left of the
+        // controls.
+        MouseArea {
+            anchors {
+                left: parent.left
+                top: parent.top
+                bottom: parent.bottom
+                right: miniBarControls.left
+            }
+            onClicked: {
+                // Guard against stacking a second player page.
+                if (pageStack.currentPage.objectName !== 'playerPage') {
+                    pageStack.push(playerPageComponent)
+                }
+            }
+        }
+
+        Row {
+            id: miniBarControls
             anchors {
                 right: parent.right
                 rightMargin: units.gu(2)
                 verticalCenter: parent.verticalCenter
             }
-            width: units.gu(3)
-            height: units.gu(3)
-            name: queueManager.playing ? 'media-playback-pause' : 'media-playback-start'
+            spacing: units.gu(2)
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: queueManager.togglePlayPause()
+            Icon {
+                width: units.gu(3)
+                height: units.gu(3)
+                name: 'media-skip-backward'
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: queueManager.prev()
+                }
+            }
+
+            Icon {
+                width: units.gu(3)
+                height: units.gu(3)
+                name: queueManager.playing ? 'media-playback-pause' : 'media-playback-start'
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: queueManager.togglePlayPause()
+                }
+            }
+
+            Icon {
+                width: units.gu(3)
+                height: units.gu(3)
+                name: 'media-skip-forward'
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: queueManager.next()
+                }
             }
         }
     }
@@ -214,9 +321,6 @@ MainView {
                         pageStack.push(errorPageComponent)
                         return
                     }
-                    // SPIKE: session 2 smoke test — session 3 replaces it with the
-                    // real player flow.
-                    root.runPlaybackSpike()
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
                             pageStack.push(homePageComponent)
@@ -507,6 +611,317 @@ MainView {
                     // On failure the page stays empty; session 3 owns error
                     // surfacing.
                 })
+            }
+        }
+    }
+
+    Component {
+        id: playerPageComponent
+
+        Page {
+            id: playerPage
+            objectName: 'playerPage'
+
+            header: PageHeader {
+                id: playerPageHeader
+                title: i18n.tr('Now Playing')
+            }
+
+            // Lyrics load lazily: only when the Lyrics tab (index 2) opens,
+            // and again if the song changes while that tab is showing.
+            function loadLyrics() {
+                if (queueManager.currentSong === null) {
+                    lyricsLabel.text = i18n.tr('No lyrics')
+                    return
+                }
+                python.call('bridge.getLyrics', [queueManager.currentSong.id], function(result) {
+                    if (result && result.ok && result.lyrics !== '') {
+                        lyricsLabel.text = result.lyrics
+                    } else {
+                        lyricsLabel.text = i18n.tr('No lyrics')
+                    }
+                })
+            }
+
+            Tabs {
+                id: playerTabs
+                anchors {
+                    top: playerPageHeader.bottom
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                    bottomMargin: miniBar.visible ? miniBar.height : 0
+                }
+
+                onSelectedTabIndexChanged: {
+                    if (selectedTabIndex === 2) {
+                        playerPage.loadLyrics()
+                    }
+                }
+
+                Tab {
+                    title: i18n.tr('Now Playing')
+                    page: Page {
+                        Flickable {
+                            anchors.fill: parent
+                            contentWidth: width
+                            contentHeight: nowPlayingColumn.implicitHeight
+                            clip: true
+
+                            Column {
+                                id: nowPlayingColumn
+                                width: parent.width
+                                spacing: units.gu(2)
+
+                                Item { width: 1; height: units.gu(1) }
+
+                                Rectangle {
+                                    width: units.gu(24)
+                                    height: width
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: theme.palette.normal.base
+
+                                    Image {
+                                        anchors.fill: parent
+                                        source: queueManager.currentSong !== null ? queueManager.currentSong.imageUrl : ''
+                                        visible: queueManager.currentSong !== null && queueManager.currentSong.imageUrl !== ''
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                    }
+
+                                    Icon {
+                                        anchors.centerIn: parent
+                                        width: units.gu(8)
+                                        height: units.gu(8)
+                                        name: 'stock_music'
+                                        visible: queueManager.currentSong === null || queueManager.currentSong.imageUrl === ''
+                                    }
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: queueManager.currentSong !== null ? queueManager.currentSong.title : ''
+                                    fontSize: 'large'
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: queueManager.currentSong !== null ? queueManager.currentSong.artistName : ''
+                                    elide: Text.ElideRight
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: queueManager.currentSong !== null ? queueManager.currentSong.albumName : ''
+                                    fontSize: 'small'
+                                    elide: Text.ElideRight
+                                }
+
+                                Item {
+                                    width: parent.width
+                                    height: units.gu(5)
+
+                                    ProgressBar {
+                                        id: progressBar
+                                        anchors {
+                                            left: parent.left
+                                            right: parent.right
+                                            top: parent.top
+                                            leftMargin: units.gu(4)
+                                            rightMargin: units.gu(4)
+                                        }
+                                        minimumValue: 0
+                                        maximumValue: audio.duration > 0 ? audio.duration : 1
+                                        value: audio.position
+                                    }
+
+                                    Label {
+                                        anchors {
+                                            left: parent.left
+                                            leftMargin: units.gu(4)
+                                            top: progressBar.bottom
+                                            topMargin: units.gu(0.5)
+                                        }
+                                        // audio.position/duration are ms;
+                                        // formatDuration takes seconds.
+                                        text: root.formatDuration(audio.position / 1000)
+                                        fontSize: 'small'
+                                    }
+
+                                    Label {
+                                        anchors {
+                                            right: parent.right
+                                            rightMargin: units.gu(4)
+                                            top: progressBar.bottom
+                                            topMargin: units.gu(0.5)
+                                        }
+                                        text: root.formatDuration(audio.duration / 1000)
+                                        fontSize: 'small'
+                                    }
+                                }
+
+                                Row {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    spacing: units.gu(4)
+                                    height: units.gu(6)
+
+                                    Icon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: units.gu(4)
+                                        height: units.gu(4)
+                                        name: 'media-skip-backward'
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: queueManager.prev()
+                                        }
+                                    }
+
+                                    Icon {
+                                        width: units.gu(6)
+                                        height: units.gu(6)
+                                        name: queueManager.playing ? 'media-playback-pause' : 'media-playback-start'
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: queueManager.togglePlayPause()
+                                        }
+                                    }
+
+                                    Icon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: units.gu(4)
+                                        height: units.gu(4)
+                                        name: 'media-skip-forward'
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: queueManager.next()
+                                        }
+                                    }
+                                }
+
+                                Row {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    spacing: units.gu(6)
+
+                                    Icon {
+                                        width: units.gu(3)
+                                        height: units.gu(3)
+                                        name: 'media-playlist-shuffle'
+                                        opacity: queueManager.shuffle ? 1.0 : 0.3
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: queueManager.toggleShuffle()
+                                        }
+                                    }
+
+                                    Icon {
+                                        width: units.gu(3)
+                                        height: units.gu(3)
+                                        name: queueManager.repeat === 'one' ? 'media-playlist-repeat-one' : 'media-playlist-repeat'
+                                        opacity: queueManager.repeat === 'off' ? 0.3 : 1.0
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: queueManager.cycleRepeat()
+                                        }
+                                    }
+                                }
+
+                                Item { width: 1; height: units.gu(1) }
+                            }
+                        }
+                    }
+                }
+
+                Tab {
+                    title: i18n.tr('Queue')
+                    page: Page {
+                        ListView {
+                            id: queueListView
+                            anchors.fill: parent
+                            clip: true
+                            model: queueManager.queue
+
+                            delegate: Item {
+                                width: queueListView.width
+                                height: units.gu(6)
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: index === queueManager.currentIndex
+                                           ? theme.palette.normal.base : 'transparent'
+                                }
+
+                                Column {
+                                    anchors {
+                                        left: parent.left
+                                        leftMargin: units.gu(2)
+                                        right: parent.right
+                                        rightMargin: units.gu(2)
+                                        verticalCenter: parent.verticalCenter
+                                    }
+
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.title
+                                        font.bold: index === queueManager.currentIndex
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.artistName
+                                        fontSize: 'small'
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: queueManager.playFrom(queueManager.queue, index)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Tab {
+                    title: i18n.tr('Lyrics')
+                    page: Page {
+                        Flickable {
+                            id: lyricsFlickable
+                            anchors.fill: parent
+                            contentWidth: width
+                            contentHeight: lyricsLabel.height + units.gu(4)
+                            clip: true
+
+                            Label {
+                                id: lyricsLabel
+                                x: units.gu(2)
+                                y: units.gu(2)
+                                width: lyricsFlickable.width - units.gu(4)
+                                wrapMode: Text.Wrap
+                            }
+                        }
+                    }
+                }
+            }
+
+            Connections {
+                target: queueManager
+                onCurrentSongChanged: {
+                    if (playerTabs.selectedTabIndex === 2) {
+                        playerPage.loadLyrics()
+                    }
+                }
             }
         }
     }
