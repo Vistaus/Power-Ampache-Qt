@@ -38,6 +38,16 @@ MainView {
 
     PageStack {
         id: pageStack
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+            bottom: parent.bottom
+            // The ONE reservation for the mini-bar: every page in the
+            // stack ends above the bar. Per-view bottomMargin lines are
+            // forbidden from now on — this owns it.
+            bottomMargin: miniBar.visible ? miniBar.height : 0
+        }
     }
 
     Audio {
@@ -542,7 +552,6 @@ MainView {
                     left: parent.left
                     right: parent.right
                     bottom: parent.bottom
-                    bottomMargin: miniBar.visible ? miniBar.height : 0
                 }
                 clip: true
                 model: albumPage.tracks
@@ -682,7 +691,6 @@ MainView {
                     left: parent.left
                     right: parent.right
                     bottom: parent.bottom
-                    bottomMargin: miniBar.visible ? miniBar.height : 0
                 }
                 visible: playerPageHeader.sections.selectedIndex === 0
                 contentWidth: width
@@ -868,7 +876,6 @@ MainView {
                     left: parent.left
                     right: parent.right
                     bottom: parent.bottom
-                    bottomMargin: miniBar.visible ? miniBar.height : 0
                 }
                 visible: playerPageHeader.sections.selectedIndex === 1
                 clip: true
@@ -923,7 +930,6 @@ MainView {
                     left: parent.left
                     right: parent.right
                     bottom: parent.bottom
-                    bottomMargin: miniBar.visible ? miniBar.height : 0
                 }
                 visible: playerPageHeader.sections.selectedIndex === 2
                 contentWidth: width
