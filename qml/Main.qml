@@ -54,6 +54,18 @@ MainView {
         id: audio
         // No auto-play: source is set only by queueManager.
 
+        onStatusChanged: {
+            // Device-only workaround: the UT/Android backend can swallow
+            // the first play() while acquiring audio focus. Re-issuing
+            // play() once the media is buffered is a no-op when playback
+            // already started; desktop behavior is unchanged.
+            if (status === MediaPlayer.Buffered
+                    && queueManager.playbackKickPending) {
+                queueManager.playbackKickPending = false
+                audio.play()
+            }
+        }
+
         onStopped: {
             // Natural end goes through queueManager.onNaturalEnd() (repeat
             // 'one' replays there, and ONLY there). Setting a new source
@@ -79,6 +91,9 @@ MainView {
         // Indices already played in shuffle mode: no repeats until the
         // queue is exhausted. Reset by playFrom() and toggleShuffle().
         property var playedIndices: []
+        // Set before every play(); the Audio element clears it on
+        // Buffered to re-issue a swallowed first play() (device-only).
+        property bool playbackKickPending: false
         readonly property var currentSong: (currentIndex >= 0 && currentIndex < queue.length) ? queue[currentIndex] : null
         readonly property bool playing: audio.playbackState === MediaPlayer.PlayingState
 
@@ -213,6 +228,7 @@ MainView {
             python.call('bridge.getStreamUrl', [song.id], function(result) {
                 if (result && result.ok) {
                     audio.source = result.url
+                    playbackKickPending = true
                     audio.play()
                 }
                 // On failure leave the player stopped; session 3 owns error
