@@ -68,6 +68,15 @@ def _errorDict(exception):
     return {'ok': False, 'errorKind': errorKind, 'message': str(exception)}
 
 
+def init():
+    "One-time startup hook for QML: make sure the cache database exists before any other bridge call."
+    try:
+        ensureDatabase(getDbPath())
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def hasCredentials():
     "Report whether credentials are stored; direct sqlite SELECT because the CredentialsEntity repository is library-internal."
     try:
@@ -90,17 +99,20 @@ def storeCredentials(serverUrl, username, password):
     try:
         dbPath = getDbPath()
         ensureDatabase(dbPath)
-        ampachedata.storeCredentialsFromPassword(serverUrl, username, password, dbPath)
+        # Library signature is (dbPath, username, serverUrl,
+        # cleartextPassword) — dbPath first, serverUrl third, unlike
+        # this function's parameter order. The password is never logged.
+        ampachedata.storeCredentialsFromPassword(dbPath, username, serverUrl, password)
         return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)
 
 
-def ping():
-    "Reachability check against the stored server; ping is auth-blind, so it says nothing about credential validity."
+def authenticate():
+    "Validate stored credentials with a real authenticated call; client.ping() is auth-blind and would validate nothing."
     try:
         client = getClient()
-        client.ping()
+        client.getArtists(limit=1)
         return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)

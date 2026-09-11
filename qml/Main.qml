@@ -16,9 +16,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
-//import QtQuick.Controls 2.2
-import QtQuick.Layouts 1.3
-import Qt.labs.settings 1.0
+import io.thp.pyotherside 1.4
 
 MainView {
     id: root
@@ -28,25 +26,299 @@ MainView {
     width: units.gu(45)
     height: units.gu(75)
 
-    Page {
-        anchors.fill: parent
+    PageStack {
+        id: pageStack
+    }
 
-        header: PageHeader {
-            id: header
-            title: i18n.tr('Power Ampache')
+    Python {
+        id: python
+
+        Component.onCompleted: {
+            addImportPath(Qt.resolvedUrl('../src/'))
+            importModule('bridge', function() {
+                python.call('bridge.init', [], function(initResult) {
+                    if (!initResult || !initResult.ok) {
+                        pageStack.push(errorPageComponent)
+                        return
+                    }
+                    python.call('bridge.hasCredentials', [], function(credentialsResult) {
+                        if (credentialsResult.ok && credentialsResult.hasCredentials) {
+                            pageStack.push(homePageComponent)
+                        } else {
+                            pageStack.push(loginPageComponent)
+                        }
+                    })
+                })
+            })
         }
+    }
 
-        Label {
-            anchors {
-                top: header.bottom
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
+    Component {
+        id: loginPageComponent
+
+        Page {
+            header: PageHeader {
+                title: i18n.tr('Power Ampache')
             }
-            text: i18n.tr('Hello World!')
 
-            verticalAlignment: Label.AlignVCenter
-            horizontalAlignment: Label.AlignHCenter
+            Column {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: parent.top
+                    margins: units.gu(4)
+                }
+                spacing: units.gu(2)
+
+                Label {
+                    width: parent.width
+                    text: i18n.tr('Connect to your Ampache server')
+                }
+
+                TextField {
+                    id: serverField
+                    width: parent.width
+                    placeholderText: i18n.tr('Server URL')
+                    inputMethodHints: Qt.ImhUrlCharactersOnly
+                }
+
+                TextField {
+                    id: usernameField
+                    width: parent.width
+                    placeholderText: i18n.tr('Username')
+                }
+
+                TextField {
+                    id: passwordField
+                    width: parent.width
+                    placeholderText: i18n.tr('Password')
+                    echoMode: TextInput.Password
+                }
+
+                Label {
+                    id: loginErrorLabel
+                    width: parent.width
+                    visible: text !== ''
+                    wrapMode: Text.Wrap
+                    color: LomiriColors.red
+                }
+
+                Button {
+                    id: connectButton
+                    width: parent.width
+                    color: LomiriColors.green
+                    text: i18n.tr('Connect')
+
+                    onClicked: {
+                        loginErrorLabel.text = ''
+                        connectButton.enabled = false
+                        python.call('bridge.storeCredentials',
+                                [serverField.text, usernameField.text, passwordField.text],
+                                function(storeResult) {
+                            if (!storeResult || !storeResult.ok) {
+                                connectButton.enabled = true
+                                loginErrorLabel.text = i18n.tr('Could not save credentials')
+                                return
+                            }
+                            python.call('bridge.authenticate', [], function(authResult) {
+                                connectButton.enabled = true
+                                if (authResult && authResult.ok) {
+                                    pageStack.clear()
+                                    pageStack.push(homePageComponent)
+                                } else if (authResult && authResult.errorKind === 'credentials') {
+                                    loginErrorLabel.text = i18n.tr('Wrong username or password')
+                                } else if (authResult && authResult.errorKind === 'offline') {
+                                    loginErrorLabel.text = i18n.tr('Server unreachable')
+                                } else {
+                                    loginErrorLabel.text = i18n.tr('Connection failed')
+                                }
+                            })
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: homePageComponent
+
+        Page {
+            header: PageHeader {
+                title: i18n.tr('Power Ampache')
+            }
+
+            Flickable {
+                id: homeFlickable
+                anchors.fill: parent
+                contentWidth: width
+                contentHeight: homeColumn.implicitHeight
+                clip: true
+
+                Column {
+                    id: homeColumn
+                    width: homeFlickable.width
+                    spacing: units.gu(2)
+
+                    Rectangle {
+                        id: offlineBanner
+                        visible: false
+                        width: parent.width
+                        height: units.gu(4)
+                        color: LomiriColors.orange
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: i18n.tr('Offline — showing cached music')
+                        }
+                    }
+
+                    Repeater {
+                        id: sectionRepeater
+                        model: [
+                            { title: i18n.tr('Recently played'),   functionName: 'bridge.getRecentAlbums' },
+                            { title: i18n.tr('Favourites'),        functionName: 'bridge.getFavouriteAlbums' },
+                            { title: i18n.tr('Frequently played'), functionName: 'bridge.getFrequentAlbums' },
+                            { title: i18n.tr('Highest rated'),     functionName: 'bridge.getHighestAlbums' },
+                            { title: i18n.tr('Newly added'),       functionName: 'bridge.getNewestAlbums' },
+                            { title: i18n.tr('Random'),            functionName: 'bridge.getRandomAlbums' }
+                        ]
+                        delegate: albumRowComponent
+                    }
+                }
+            }
+
+            Component.onCompleted: {
+                // Background auth: failure must not interrupt browsing.
+                python.call('bridge.authenticate', [], function(authResult) {
+                    if (authResult && !authResult.ok && authResult.errorKind === 'offline') {
+                        offlineBanner.visible = true
+                    }
+                })
+                // Fire all six fetches at once; each row renders as its
+                // data arrives. Favourites answers from the local DB.
+                for (var i = 0; i < sectionRepeater.model.length; i++) {
+                    loadRow(i, sectionRepeater.model[i].functionName)
+                }
+            }
+
+            function loadRow(rowIndex, functionName) {
+                python.call(functionName, [], function(result) {
+                    if (result && result.ok) {
+                        var row = sectionRepeater.itemAt(rowIndex)
+                        for (var i = 0; i < result.albums.length; i++) {
+                            row.model.append(result.albums[i])
+                        }
+                    } else if (result && result.errorKind === 'offline') {
+                        offlineBanner.visible = true
+                    }
+                    // Any other failure: the row stays empty and hidden.
+                })
+            }
+        }
+    }
+
+    Component {
+        id: albumRowComponent
+
+        Item {
+            id: albumRow
+            property alias model: albumModel
+
+            // Empty rows are omitted: the Column skips invisible children.
+            visible: albumModel.count > 0
+            width: parent.width
+            height: rowLabel.height + albumListView.height + units.gu(1)
+
+            ListModel {
+                id: albumModel
+            }
+
+            Label {
+                id: rowLabel
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    leftMargin: units.gu(2)
+                }
+                text: modelData.title
+                fontSize: 'large'
+            }
+
+            ListView {
+                id: albumListView
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: rowLabel.bottom
+                    topMargin: units.gu(1)
+                    leftMargin: units.gu(2)
+                }
+                height: units.gu(20)
+                orientation: ListView.Horizontal
+                spacing: units.gu(1)
+                clip: true
+                model: albumModel
+
+                delegate: Item {
+                    width: units.gu(16)
+                    height: albumListView.height
+
+                    Rectangle {
+                        id: coverFrame
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            top: parent.top
+                        }
+                        height: width
+                        color: theme.palette.normal.base
+
+                        Image {
+                            anchors.fill: parent
+                            source: artUrl
+                            visible: artUrl !== ''
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                        }
+
+                        Icon {
+                            anchors.centerIn: parent
+                            width: units.gu(6)
+                            height: units.gu(6)
+                            name: 'stock_music'
+                            visible: artUrl === ''
+                        }
+                    }
+
+                    Label {
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            top: coverFrame.bottom
+                            topMargin: units.gu(0.5)
+                        }
+                        text: name
+                        fontSize: 'small'
+                        elide: Text.ElideRight
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: errorPageComponent
+
+        Page {
+            header: PageHeader {
+                title: i18n.tr('Power Ampache')
+            }
+
+            Label {
+                anchors.centerIn: parent
+                text: i18n.tr('Could not open the local database')
+            }
         }
     }
 }
