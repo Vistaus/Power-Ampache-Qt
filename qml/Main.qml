@@ -26,6 +26,8 @@ MainView {
     width: units.gu(45)
     height: units.gu(75)
 
+    property bool justAuthenticated: false
+
     PageStack {
         id: pageStack
     }
@@ -51,6 +53,12 @@ MainView {
                 })
             })
         }
+
+        onError: {
+            console.log('python error: ' + traceback)
+            pageStack.clear()
+            pageStack.push(errorPageComponent, { message: i18n.tr('Internal error') })
+        }
     }
 
     Component {
@@ -58,6 +66,7 @@ MainView {
 
         Page {
             header: PageHeader {
+                id: pageHeader
                 title: i18n.tr('Power Ampache')
             }
 
@@ -65,7 +74,7 @@ MainView {
                 anchors {
                     left: parent.left
                     right: parent.right
-                    top: parent.top
+                    top: pageHeader.bottom
                     margins: units.gu(4)
                 }
                 spacing: units.gu(2)
@@ -123,6 +132,8 @@ MainView {
                             python.call('bridge.authenticate', [], function(authResult) {
                                 connectButton.enabled = true
                                 if (authResult && authResult.ok) {
+                                    root.justAuthenticated = true
+                                    passwordField.text = ''
                                     pageStack.clear()
                                     pageStack.push(homePageComponent)
                                 } else if (authResult && authResult.errorKind === 'credentials') {
@@ -145,12 +156,18 @@ MainView {
 
         Page {
             header: PageHeader {
+                id: pageHeader
                 title: i18n.tr('Power Ampache')
             }
 
             Flickable {
                 id: homeFlickable
-                anchors.fill: parent
+                anchors {
+                    top: pageHeader.bottom
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                }
                 contentWidth: width
                 contentHeight: homeColumn.implicitHeight
                 clip: true
@@ -190,11 +207,17 @@ MainView {
 
             Component.onCompleted: {
                 // Background auth: failure must not interrupt browsing.
-                python.call('bridge.authenticate', [], function(authResult) {
-                    if (authResult && !authResult.ok && authResult.errorKind === 'offline') {
-                        offlineBanner.visible = true
-                    }
-                })
+                // Skip when the login flow just authenticated; reset the
+                // flag so a later cold start still authenticates.
+                if (root.justAuthenticated) {
+                    root.justAuthenticated = false
+                } else {
+                    python.call('bridge.authenticate', [], function(authResult) {
+                        if (authResult && !authResult.ok && authResult.errorKind === 'offline') {
+                            offlineBanner.visible = true
+                        }
+                    })
+                }
                 // Fire all six fetches at once; each row renders as its
                 // data arrives. Favourites answers from the local DB.
                 for (var i = 0; i < sectionRepeater.model.length; i++) {
@@ -311,13 +334,15 @@ MainView {
         id: errorPageComponent
 
         Page {
+            property string message: i18n.tr('Could not open the local database')
+
             header: PageHeader {
                 title: i18n.tr('Power Ampache')
             }
 
             Label {
                 anchors.centerIn: parent
-                text: i18n.tr('Could not open the local database')
+                text: message
             }
         }
     }
