@@ -277,7 +277,7 @@ MainView {
                     topMargin: units.gu(1)
                     leftMargin: units.gu(2)
                 }
-                height: units.gu(20)
+                height: units.gu(22)
                 orientation: ListView.Horizontal
                 spacing: units.gu(1)
                 clip: true
@@ -314,16 +314,29 @@ MainView {
                         }
                     }
 
-                    Label {
+                    Column {
                         anchors {
                             left: parent.left
                             right: parent.right
                             top: coverFrame.bottom
                             topMargin: units.gu(0.5)
                         }
-                        text: name
-                        fontSize: 'small'
-                        elide: Text.ElideRight
+                        spacing: units.gu(0.2)
+
+                        Label {
+                            width: parent.width
+                            text: name
+                            fontSize: 'small'
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: artistName
+                            fontSize: 'small'
+                            elide: Text.ElideRight
+                        }
                     }
                 }
             }
