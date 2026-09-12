@@ -603,59 +603,12 @@ MainView {
                 clip: true
                 model: albumPage.tracks
 
-                delegate: Item {
+                delegate: TrackDelegate {
                     width: trackListView.width
-                    height: units.gu(6)
-
-                    Label {
-                        id: trackNumberLabel
-                        anchors {
-                            left: parent.left
-                            leftMargin: units.gu(2)
-                            verticalCenter: parent.verticalCenter
-                        }
-                        width: units.gu(3)
-                        text: modelData.trackNumber
+                    playTrackCallback: function(rowIndex) {
+                        queueManager.playFrom(albumPage.tracks, rowIndex)
                     }
-
-                    Column {
-                        anchors {
-                            left: trackNumberLabel.right
-                            leftMargin: units.gu(1)
-                            right: durationLabel.left
-                            rightMargin: units.gu(1)
-                            verticalCenter: parent.verticalCenter
-                        }
-
-                        Label {
-                            width: parent.width
-                            text: modelData.title
-                            elide: Text.ElideRight
-                        }
-
-                        Label {
-                            width: parent.width
-                            text: modelData.artistName
-                            fontSize: 'small'
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    Label {
-                        id: durationLabel
-                        anchors {
-                            right: parent.right
-                            rightMargin: units.gu(2)
-                            verticalCenter: parent.verticalCenter
-                        }
-                        text: root.formatDuration(modelData.time)
-                        fontSize: 'small'
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: queueManager.playFrom(albumPage.tracks, index)
-                    }
+                    formatDuration: root.formatDuration
                 }
             }
 
@@ -1088,65 +1041,12 @@ MainView {
                 clip: true
                 model: albumModel
 
-                delegate: Item {
-                    width: units.gu(16)
+                delegate: AlbumCard {
                     height: albumListView.height
-
-                    Rectangle {
-                        id: coverFrame
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            top: parent.top
-                        }
-                        height: width
-                        color: theme.palette.normal.base
-
-                        Image {
-                            anchors.fill: parent
-                            source: artUrl
-                            visible: artUrl !== ''
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                        }
-
-                        Icon {
-                            anchors.centerIn: parent
-                            width: units.gu(6)
-                            height: units.gu(6)
-                            name: 'stock_music'
-                            visible: artUrl === ''
-                        }
-                    }
-
-                    Column {
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            top: coverFrame.bottom
-                            topMargin: units.gu(0.5)
-                        }
-                        spacing: units.gu(0.2)
-
-                        Label {
-                            width: parent.width
-                            text: name
-                            fontSize: 'small'
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-
-                        Label {
-                            width: parent.width
-                            text: artistName
-                            fontSize: 'small'
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: pageStack.push(albumPageComponent, { albumId: model.id, albumName: model.name })
+                    openAlbumCallback: function(albumId, albumName) {
+                        pageStack.push(albumPageComponent, {
+                            albumId: albumId, albumName: albumName
+                        })
                     }
                 }
             }
