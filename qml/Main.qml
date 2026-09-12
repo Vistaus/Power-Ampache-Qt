@@ -279,101 +279,13 @@ MainView {
         }
     }
 
-    // Now-playing mini-bar: prev / play-pause / next; tapping the
-    // title/artist area pushes the full player page.
-    Rectangle {
+    MiniBar {
         id: miniBar
-        visible: queueManager.currentSong !== null
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-        }
-        height: units.gu(6)
-        color: theme.palette.normal.base
-
-        Column {
-            id: miniBarText
-            anchors {
-                left: parent.left
-                leftMargin: units.gu(2)
-                right: miniBarControls.left
-                rightMargin: units.gu(1)
-                verticalCenter: parent.verticalCenter
-            }
-
-            Label {
-                width: parent.width
-                text: queueManager.currentSong !== null ? queueManager.currentSong.title : ''
-                font.bold: true
-                elide: Text.ElideRight
-            }
-
-            Label {
-                width: parent.width
-                text: queueManager.currentSong !== null ? queueManager.currentSong.artistName : ''
-                fontSize: 'small'
-                elide: Text.ElideRight
-            }
-        }
-
-        // Tap target that opens the player page: everything left of the
-        // controls.
-        MouseArea {
-            anchors {
-                left: parent.left
-                top: parent.top
-                bottom: parent.bottom
-                right: miniBarControls.left
-            }
-            onClicked: {
-                // Guard against stacking a second player page.
-                if (pageStack.currentPage.objectName !== 'playerPage') {
-                    pageStack.push(playerPageComponent)
-                }
-            }
-        }
-
-        Row {
-            id: miniBarControls
-            anchors {
-                right: parent.right
-                rightMargin: units.gu(2)
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: units.gu(2)
-
-            Icon {
-                width: units.gu(3)
-                height: units.gu(3)
-                name: 'media-skip-backward'
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: queueManager.prev()
-                }
-            }
-
-            Icon {
-                width: units.gu(3)
-                height: units.gu(3)
-                name: queueManager.playing ? 'media-playback-pause' : 'media-playback-start'
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: queueManager.togglePlayPause()
-                }
-            }
-
-            Icon {
-                width: units.gu(3)
-                height: units.gu(3)
-                name: 'media-skip-forward'
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: queueManager.next()
-                }
+        queueManager: queueManager
+        openPlayerCallback: function() {
+            // Guard against stacking a second player page.
+            if (pageStack.currentPage.objectName !== 'playerPage') {
+                pageStack.push(playerPageComponent)
             }
         }
     }
@@ -1002,53 +914,11 @@ MainView {
     Component {
         id: albumRowComponent
 
-        Item {
-            id: albumRow
-            property alias model: albumModel
-
-            // Empty rows are omitted: the Column skips invisible children.
-            visible: albumModel.count > 0
-            width: parent.width
-            height: rowLabel.height + albumListView.height + units.gu(1)
-
-            ListModel {
-                id: albumModel
-            }
-
-            Label {
-                id: rowLabel
-                anchors {
-                    left: parent.left
-                    top: parent.top
-                    leftMargin: units.gu(2)
-                }
-                text: modelData.title
-                fontSize: 'large'
-            }
-
-            ListView {
-                id: albumListView
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: rowLabel.bottom
-                    topMargin: units.gu(1)
-                    leftMargin: units.gu(2)
-                }
-                height: units.gu(22)
-                orientation: ListView.Horizontal
-                spacing: units.gu(1)
-                clip: true
-                model: albumModel
-
-                delegate: AlbumCard {
-                    height: albumListView.height
-                    openAlbumCallback: function(albumId, albumName) {
-                        pageStack.push(albumPageComponent, {
-                            albumId: albumId, albumName: albumName
-                        })
-                    }
-                }
+        AlbumRow {
+            openAlbumCallback: function(albumId, albumName) {
+                pageStack.push(albumPageComponent, {
+                    albumId: albumId, albumName: albumName
+                })
             }
         }
     }
