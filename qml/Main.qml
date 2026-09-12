@@ -322,89 +322,12 @@ MainView {
     Component {
         id: loginPageComponent
 
-        Page {
-            header: PageHeader {
-                id: pageHeader
-                title: i18n.tr('Power Ampache')
-            }
-
-            Column {
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: pageHeader.bottom
-                    margins: units.gu(4)
-                }
-                spacing: units.gu(2)
-
-                Label {
-                    width: parent.width
-                    text: i18n.tr('Connect to your Ampache server')
-                }
-
-                TextField {
-                    id: serverField
-                    width: parent.width
-                    placeholderText: i18n.tr('Server URL')
-                    inputMethodHints: Qt.ImhUrlCharactersOnly
-                }
-
-                TextField {
-                    id: usernameField
-                    width: parent.width
-                    placeholderText: i18n.tr('Username')
-                }
-
-                TextField {
-                    id: passwordField
-                    width: parent.width
-                    placeholderText: i18n.tr('Password')
-                    echoMode: TextInput.Password
-                }
-
-                Label {
-                    id: loginErrorLabel
-                    width: parent.width
-                    visible: text !== ''
-                    wrapMode: Text.Wrap
-                    color: LomiriColors.red
-                }
-
-                Button {
-                    id: connectButton
-                    width: parent.width
-                    color: LomiriColors.green
-                    text: i18n.tr('Connect')
-
-                    onClicked: {
-                        loginErrorLabel.text = ''
-                        connectButton.enabled = false
-                        python.call('bridge.storeCredentials',
-                                [serverField.text, usernameField.text, passwordField.text],
-                                function(storeResult) {
-                            if (!storeResult || !storeResult.ok) {
-                                connectButton.enabled = true
-                                loginErrorLabel.text = i18n.tr('Could not save credentials')
-                                return
-                            }
-                            python.call('bridge.authenticate', [], function(authResult) {
-                                connectButton.enabled = true
-                                if (authResult && authResult.ok) {
-                                    root.justAuthenticated = true
-                                    passwordField.text = ''
-                                    pageStack.clear()
-                                    pageStack.push(homePageComponent)
-                                } else if (authResult && authResult.errorKind === 'credentials') {
-                                    loginErrorLabel.text = i18n.tr('Wrong username or password')
-                                } else if (authResult && authResult.errorKind === 'offline') {
-                                    loginErrorLabel.text = i18n.tr('Server unreachable')
-                                } else {
-                                    loginErrorLabel.text = i18n.tr('Connection failed')
-                                }
-                            })
-                        })
-                    }
-                }
+        LoginPage {
+            python: python
+            authenticatedCallback: function() {
+                root.justAuthenticated = true
+                pageStack.clear()
+                pageStack.push(homePageComponent)
             }
         }
     }
@@ -491,48 +414,10 @@ MainView {
     Component {
         id: albumPageComponent
 
-        Page {
-            id: albumPage
-            property var albumId
-            property string albumName: ''
-            // Tracks in the order the bridge returns them; this same array
-            // is handed to queueManager.playFrom() on track tap.
-            property var tracks: []
-
-            header: PageHeader {
-                id: albumPageHeader
-                title: albumPage.albumName
-            }
-
-            ListView {
-                id: trackListView
-                anchors {
-                    top: albumPageHeader.bottom
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-                }
-                clip: true
-                model: albumPage.tracks
-
-                delegate: TrackDelegate {
-                    width: trackListView.width
-                    playTrackCallback: function(rowIndex) {
-                        queueManager.playFrom(albumPage.tracks, rowIndex)
-                    }
-                    formatDuration: root.formatDuration
-                }
-            }
-
-            Component.onCompleted: {
-                python.call('bridge.getAlbumSongs', [albumPage.albumId], function(result) {
-                    if (result && result.ok) {
-                        albumPage.tracks = result.songs
-                    }
-                    // On failure the page stays empty; session 3 owns error
-                    // surfacing.
-                })
-            }
+        AlbumPage {
+            python: python
+            queueManager: queueManager
+            formatDuration: root.formatDuration
         }
     }
 
