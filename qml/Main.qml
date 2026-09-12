@@ -335,79 +335,10 @@ MainView {
     Component {
         id: homePageComponent
 
-        Page {
-            header: PageHeader {
-                id: pageHeader
-                title: i18n.tr('Power Ampache')
-            }
-
-            Flickable {
-                id: homeFlickable
-                anchors {
-                    top: pageHeader.bottom
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-                }
-                contentWidth: width
-                contentHeight: homeColumn.implicitHeight
-                clip: true
-
-                Column {
-                    id: homeColumn
-                    width: homeFlickable.width
-                    spacing: units.gu(2)
-
-                    OfflineBanner { id: offlineBanner }
-
-                    Repeater {
-                        id: sectionRepeater
-                        model: [
-                            { title: i18n.tr('Recently played'),   functionName: 'bridge.getRecentAlbums' },
-                            { title: i18n.tr('Favourites'),        functionName: 'bridge.getFavouriteAlbums' },
-                            { title: i18n.tr('Frequently played'), functionName: 'bridge.getFrequentAlbums' },
-                            { title: i18n.tr('Highest rated'),     functionName: 'bridge.getHighestAlbums' },
-                            { title: i18n.tr('Newly added'),       functionName: 'bridge.getNewestAlbums' },
-                            { title: i18n.tr('Random'),            functionName: 'bridge.getRandomAlbums' }
-                        ]
-                        delegate: albumRowComponent
-                    }
-                }
-            }
-
-            Component.onCompleted: {
-                // Background auth: failure must not interrupt browsing.
-                // Skip when the login flow just authenticated; reset the
-                // flag so a later cold start still authenticates.
-                if (root.justAuthenticated) {
-                    root.justAuthenticated = false
-                } else {
-                    python.call('bridge.authenticate', [], function(authResult) {
-                        if (authResult && !authResult.ok && authResult.errorKind === 'offline') {
-                            offlineBanner.visible = true
-                        }
-                    })
-                }
-                // Fire all six fetches at once; each row renders as its
-                // data arrives. Favourites answers from the local DB.
-                for (var i = 0; i < sectionRepeater.model.length; i++) {
-                    loadRow(i, sectionRepeater.model[i].functionName)
-                }
-            }
-
-            function loadRow(rowIndex, functionName) {
-                python.call(functionName, [], function(result) {
-                    if (result && result.ok) {
-                        var row = sectionRepeater.itemAt(rowIndex)
-                        for (var i = 0; i < result.albums.length; i++) {
-                            row.model.append(result.albums[i])
-                        }
-                    } else if (result && result.errorKind === 'offline') {
-                        offlineBanner.visible = true
-                    }
-                    // Any other failure: the row stays empty and hidden.
-                })
-            }
+        HomePage {
+            pythonBridge: python
+            mainView: root
+            albumRowDelegate: albumRowComponent
         }
     }
 
