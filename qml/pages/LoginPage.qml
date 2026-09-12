@@ -6,14 +6,15 @@
 import QtQuick 2.7
 import Lomiri.Components 1.3
 
-// Setup screen shown only when no credentials are stored. The python
-// object and authenticatedCallback() are injected at the use site;
+// Setup screen shown only when no credentials are stored. The
+// pythonBridge object (the Python element) and authenticatedCallback()
+// are injected at the use site;
 // the callback performs the root-level actions after a successful
 // authenticate (flag, clear stack, push home).
 Page {
     id: loginPage
 
-    property var python
+    property var pythonBridge
     property var authenticatedCallback
 
     header: PageHeader {
@@ -72,7 +73,7 @@ Page {
             onClicked: {
                 loginErrorLabel.text = ''
                 connectButton.enabled = false
-                python.call('bridge.storeCredentials',
+                pythonBridge.call('bridge.storeCredentials',
                         [serverField.text, usernameField.text, passwordField.text],
                         function(storeResult) {
                     if (!storeResult || !storeResult.ok) {
@@ -80,7 +81,7 @@ Page {
                         loginErrorLabel.text = i18n.tr('Could not save credentials')
                         return
                     }
-                    python.call('bridge.authenticate', [], function(authResult) {
+                    pythonBridge.call('bridge.authenticate', [], function(authResult) {
                         connectButton.enabled = true
                         if (authResult && authResult.ok) {
                             passwordField.text = ''

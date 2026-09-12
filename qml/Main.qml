@@ -281,7 +281,7 @@ MainView {
 
     MiniBar {
         id: miniBar
-        queueManager: queueManager
+        playback: queueManager
         openPlayerCallback: function() {
             // Guard against stacking a second player page.
             if (pageStack.currentPage.objectName !== 'playerPage') {
@@ -323,7 +323,7 @@ MainView {
         id: loginPageComponent
 
         LoginPage {
-            python: python
+            pythonBridge: python
             authenticatedCallback: function() {
                 root.justAuthenticated = true
                 pageStack.clear()
@@ -415,8 +415,8 @@ MainView {
         id: albumPageComponent
 
         AlbumPage {
-            python: python
-            queueManager: queueManager
+            pythonBridge: python
+            playback: queueManager
             formatDuration: root.formatDuration
         }
     }

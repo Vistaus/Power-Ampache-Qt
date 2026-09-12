@@ -9,15 +9,16 @@ import "../components"
 
 // Album drill-down: track list, tap plays the album from that track.
 // albumId and albumName arrive via push-with-properties (the Component
-// wrapper in Main.qml makes them land here). python, queueManager and
-// formatDuration are injected at the use site.
+// wrapper in Main.qml makes them land here). pythonBridge (the Python
+// element), playback (the queue manager) and formatDuration are
+// injected at the use site.
 Page {
     id: albumPage
 
     property var albumId
     property string albumName: ''
-    property var python
-    property var queueManager
+    property var pythonBridge
+    property var playback
     property var formatDuration
 
     // Tracks in the order the bridge returns them; this same array
@@ -43,14 +44,14 @@ Page {
         delegate: TrackDelegate {
             width: trackListView.width
             playTrackCallback: function(rowIndex) {
-                queueManager.playFrom(albumPage.tracks, rowIndex)
+                playback.playFrom(albumPage.tracks, rowIndex)
             }
             formatDuration: albumPage.formatDuration
         }
     }
 
     Component.onCompleted: {
-        python.call('bridge.getAlbumSongs', [albumPage.albumId], function(result) {
+        pythonBridge.call('bridge.getAlbumSongs', [albumPage.albumId], function(result) {
             if (result && result.ok) {
                 albumPage.tracks = result.songs
             }

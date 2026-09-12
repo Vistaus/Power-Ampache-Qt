@@ -8,15 +8,15 @@ import Lomiri.Components 1.3
 
 // Now-playing mini-bar: prev / play-pause / next; tapping the
 // title/artist area opens the full player page.
-// queueManager (the playback engine object) and openPlayerCallback()
-// are injected at the use site.
+// playback (the queue manager / playback engine object) and
+// openPlayerCallback() are injected at the use site.
 Rectangle {
     id: miniBar
 
-    property var queueManager
+    property var playback
     property var openPlayerCallback
 
-    visible: queueManager.currentSong !== null
+    visible: playback.currentSong !== null
     anchors {
         left: parent.left
         right: parent.right
@@ -37,14 +37,14 @@ Rectangle {
 
         Label {
             width: parent.width
-            text: queueManager.currentSong !== null ? queueManager.currentSong.title : ''
+            text: playback.currentSong !== null ? playback.currentSong.title : ''
             font.bold: true
             elide: Text.ElideRight
         }
 
         Label {
             width: parent.width
-            text: queueManager.currentSong !== null ? queueManager.currentSong.artistName : ''
+            text: playback.currentSong !== null ? playback.currentSong.artistName : ''
             fontSize: 'small'
             elide: Text.ElideRight
         }
@@ -78,18 +78,18 @@ Rectangle {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: queueManager.prev()
+                onClicked: playback.prev()
             }
         }
 
         Icon {
             width: units.gu(3)
             height: units.gu(3)
-            name: queueManager.playing ? 'media-playback-pause' : 'media-playback-start'
+            name: playback.playing ? 'media-playback-pause' : 'media-playback-start'
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: queueManager.togglePlayPause()
+                onClicked: playback.togglePlayPause()
             }
         }
 
@@ -100,7 +100,7 @@ Rectangle {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: queueManager.next()
+                onClicked: playback.next()
             }
         }
     }
