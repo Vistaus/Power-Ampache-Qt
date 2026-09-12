@@ -100,7 +100,7 @@ def storeCredentials(serverUrl, username, password):
         dbPath = getDbPath()
         ensureDatabase(dbPath)
         # Library signature is (dbPath, username, serverUrl,
-        # cleartextPassword) — dbPath first, serverUrl third, unlike
+        # cleartextPassword) - dbPath first, serverUrl third, unlike
         # this function's parameter order. The password is never logged.
         ampachedata.storeCredentialsFromPassword(dbPath, username, serverUrl, password)
         return {'ok': True}
@@ -220,7 +220,7 @@ def getStreamUrl(songId, stats=None):
     """Return a stream URL for the built-in player. The stats argument
     passes through verbatim: real plays omit it (the library default
     records the play), the spike passes 0. The URL embeds the live
-    session token — never log it, never persist it."""
+    session token - never log it, never persist it."""
     try:
         client = getClient()
         url = client.getStreamUrl(songId, stats=stats)

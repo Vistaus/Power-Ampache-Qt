@@ -45,7 +45,7 @@ MainView {
             bottom: parent.bottom
             // The ONE reservation for the mini-bar: every page in the
             // stack ends above the bar. Per-view bottomMargin lines are
-            // forbidden from now on — this owns it.
+            // forbidden from now on - this owns it.
             bottomMargin: miniBar.visible ? miniBar.height : 0
         }
     }
@@ -74,7 +74,7 @@ MainView {
     }
 
     // The kick itself: pause() then play(), the sequence proven to work
-    // manually. 1000ms gap — replicates the twice-proven manual gap from
+    // manually. 1000ms gap - replicates the twice-proven manual gap from
     // the device logs; shorter may race the hub's pause state transition.
     Timer {
         id: playKick
@@ -147,7 +147,7 @@ MainView {
         }
 
         // Natural end of a song (Audio EndOfMedia). Repeat 'one' replays
-        // here and ONLY here — manual prev/next taps always move.
+        // here and ONLY here - manual prev/next taps always move.
         function onNaturalEnd() {
             if (repeat === 'one' && currentSong !== null) {
                 // Seek-restart, not playCurrentSong(): re-fetching the URL
@@ -217,7 +217,7 @@ MainView {
                 currentIndex = currentIndex - 1
                 playCurrentSong()
             } else if (currentSong !== null) {
-                // First track restarts via seek — re-fetching the URL with
+                // First track restarts via seek - re-fetching the URL with
                 // default stats would record a second play.
                 audio.seek(0)
             }
@@ -230,7 +230,7 @@ MainView {
             }
             // DEFAULT stats (stats argument omitted on purpose): real user
             // plays feed the listen history. any test or prefetch must pass stats=0.
-            // Never log result.url — it embeds the session token.
+            // Never log result.url - it embeds the session token.
             python.call('bridge.getStreamUrl', [song.id], function(result) {
                 if (result && result.ok) {
                     audio.source = result.url
@@ -257,7 +257,7 @@ MainView {
             if (!playbackKickPending) {
                 return
             }
-            // The swallow check is device-proven — semantics unchanged.
+            // The swallow check is device-proven - semantics unchanged.
             // Flag cleared before the kick, as before.
             if (audio.playbackState === MediaPlayer.PausedState && audio.position < 250) {
                 playbackKickPending = false
@@ -530,7 +530,7 @@ MainView {
 
                         Label {
                             anchors.centerIn: parent
-                            text: i18n.tr('Offline — showing cached music')
+                            text: i18n.tr('Offline - showing cached music')
                         }
                     }
 
