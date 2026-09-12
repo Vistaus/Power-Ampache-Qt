@@ -97,8 +97,8 @@ MainView {
         // Indices already played in shuffle mode: no repeats until the
         // queue is exhausted. Reset by playFrom() and toggleShuffle().
         property var playedIndices: []
-        // Set before every play(); the Audio element clears it on
-        // Buffered to re-issue a swallowed first play() (device-only).
+        // Set by playCurrentSong(); the playWatchdog timer consumes it
+        // to detect a swallowed play (device-only).
         property bool playbackKickPending: false
         readonly property var currentSong: (currentIndex >= 0 && currentIndex < queue.length) ? queue[currentIndex] : null
         readonly property bool playing: audio.playbackState === MediaPlayer.PlayingState
@@ -247,18 +247,33 @@ MainView {
         // - swallowed play: PausedState + position frozen at 0 -> the
         //   pause+play kick, which the hub accepts;
         // - working play: PlayingState + advancing position -> no kick
-        //   (desktop and normal starts).
-        // One kick attempt only, never a loop: playbackKickPending is
+        //   (desktop and normal starts);
+        // - slow buffer: Buffering/Stalled status -> re-arm the watchdog
+        //   and keep the flag, extending the deadline instead of silently
+        //   disabling the kick.
+        // One kick attempt only, never a kick loop: playbackKickPending is
         // cleared before any kick.
         function playWatchdogCheck() {
             if (!playbackKickPending) {
                 return
             }
-            playbackKickPending = false
+            // The swallow check is device-proven — semantics unchanged.
+            // Flag cleared before the kick, as before.
             if (audio.playbackState === MediaPlayer.PausedState && audio.position < 250) {
+                playbackKickPending = false
                 audio.pause()
                 playKick.restart()
+                return
             }
+            // Not swallowed, still buffering: keep the flag and re-arm so
+            // a slow network extends the deadline rather than consuming
+            // the one kick attempt.
+            if (audio.status === MediaPlayer.Buffering || audio.status === MediaPlayer.Stalled) {
+                playWatchdog.restart()
+                return
+            }
+            // Working play (or any other state): consume the flag, no kick.
+            playbackKickPending = false
         }
     }
 
@@ -811,26 +826,30 @@ MainView {
                         }
 
                         Label {
+                            id: positionLabel
                             anchors {
                                 left: parent.left
                                 leftMargin: units.gu(4)
                                 top: progressBar.bottom
                                 topMargin: units.gu(0.5)
                             }
-                            // audio.position/duration are ms;
-                            // formatDuration takes seconds.
-                            text: root.formatDuration(audio.position / 1000)
+                            // No binding: updated imperatively by
+                            // timeTicker and on song change. Declarative
+                            // bindings on audio.position/duration caused
+                            // the binding-loop warning.
+                            text: ''
                             fontSize: 'small'
                         }
 
                         Label {
+                            id: durationLabel
                             anchors {
                                 right: parent.right
                                 rightMargin: units.gu(4)
                                 top: progressBar.bottom
                                 topMargin: units.gu(0.5)
                             }
-                            text: root.formatDuration(audio.duration / 1000)
+                            text: ''
                             fontSize: 'small'
                         }
                     }
@@ -986,6 +1005,29 @@ MainView {
                 }
             }
 
+            // Imperative clock for the time labels. Must live inside this
+            // component: positionLabel/durationLabel are page-scoped ids,
+            // invisible at root scope. Runs only while playing.
+            Timer {
+                id: timeTicker
+                interval: 500
+                repeat: true
+                running: audio.playbackState === MediaPlayer.PlayingState
+                onTriggered: {
+                    // audio.position/duration are ms; formatDuration
+                    // takes seconds.
+                    positionLabel.text = root.formatDuration(audio.position / 1000)
+                    durationLabel.text = root.formatDuration(audio.duration / 1000)
+                }
+            }
+
+            Component.onCompleted: {
+                // Page (re)opened with a track already loaded but paused:
+                // seed current values so the labels are never blank.
+                positionLabel.text = root.formatDuration(audio.position / 1000)
+                durationLabel.text = root.formatDuration(audio.duration / 1000)
+            }
+
             Connections {
                 target: playerPageHeader.sections
                 onSelectedIndexChanged: {
@@ -998,6 +1040,13 @@ MainView {
             Connections {
                 target: queueManager
                 onCurrentSongChanged: {
+                    // Reset the clock so a fresh/stopped track never shows
+                    // the previous track's times. Uses the song's own
+                    // duration (seconds) so a paused track shows 0:00 /
+                    // its length before the stream reports a duration.
+                    positionLabel.text = root.formatDuration(0)
+                    durationLabel.text = root.formatDuration(
+                        queueManager.currentSong !== null ? queueManager.currentSong.time : 0)
                     if (playerPageHeader.sections.selectedIndex === 2) {
                         playerPage.loadLyrics()
                     }
