@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 23:31+0000\n"
+"POT-Creation-Date: 2026-09-12 13:17+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,92 +17,92 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:364
+#: ../qml/Main.qml:404
 msgid "Internal error"
 msgstr ""
 
-#: ../qml/Main.qml:374 ../qml/Main.qml:464 ../qml/Main.qml:1098
+#: ../qml/Main.qml:414 ../qml/Main.qml:504 ../qml/Main.qml:1172
 #: powerampache.desktop.in.h:1
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/Main.qml:388
+#: ../qml/Main.qml:428
 msgid "Connect to your Ampache server"
 msgstr ""
 
-#: ../qml/Main.qml:394
+#: ../qml/Main.qml:434
 msgid "Server URL"
 msgstr ""
 
-#: ../qml/Main.qml:401
+#: ../qml/Main.qml:441
 msgid "Username"
 msgstr ""
 
-#: ../qml/Main.qml:407
+#: ../qml/Main.qml:447
 msgid "Password"
 msgstr ""
 
-#: ../qml/Main.qml:423
+#: ../qml/Main.qml:463
 msgid "Connect"
 msgstr ""
 
-#: ../qml/Main.qml:433
+#: ../qml/Main.qml:473
 msgid "Could not save credentials"
 msgstr ""
 
-#: ../qml/Main.qml:444
+#: ../qml/Main.qml:484
 msgid "Wrong username or password"
 msgstr ""
 
-#: ../qml/Main.qml:446
+#: ../qml/Main.qml:486
 msgid "Server unreachable"
 msgstr ""
 
-#: ../qml/Main.qml:448
+#: ../qml/Main.qml:488
 msgid "Connection failed"
 msgstr ""
 
-#: ../qml/Main.qml:493
+#: ../qml/Main.qml:533
 msgid "Offline — showing cached music"
 msgstr ""
 
-#: ../qml/Main.qml:500
+#: ../qml/Main.qml:540
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/Main.qml:501
+#: ../qml/Main.qml:541
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/Main.qml:502
+#: ../qml/Main.qml:542
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/Main.qml:503
+#: ../qml/Main.qml:543
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/Main.qml:504
+#: ../qml/Main.qml:544
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/Main.qml:505
+#: ../qml/Main.qml:545
 msgid "Random"
 msgstr ""
 
-#: ../qml/Main.qml:652 ../qml/Main.qml:658 ../qml/Main.qml:692
-#: ../qml/Main.qml:694
+#: ../qml/Main.qml:692 ../qml/Main.qml:698 ../qml/Main.qml:732
+#: ../qml/Main.qml:734
 msgid "Now Playing"
 msgstr ""
 
-#: ../qml/Main.qml:658 ../qml/Main.qml:692 ../qml/Main.qml:694
+#: ../qml/Main.qml:698 ../qml/Main.qml:732 ../qml/Main.qml:734
 msgid "Queue"
 msgstr ""
 
-#: ../qml/Main.qml:692
+#: ../qml/Main.qml:732
 msgid "Lyrics"
 msgstr ""
 
-#: ../qml/Main.qml:1095
+#: ../qml/Main.qml:1169
 msgid "Could not open the local database"
 msgstr ""
