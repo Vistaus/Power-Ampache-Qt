@@ -18,6 +18,8 @@ import QtQuick 2.7
 import Lomiri.Components 1.3
 import io.thp.pyotherside 1.4
 import QtMultimedia 5.0
+import "pages"
+import "components"
 
 MainView {
     id: root
@@ -521,18 +523,7 @@ MainView {
                     width: homeFlickable.width
                     spacing: units.gu(2)
 
-                    Rectangle {
-                        id: offlineBanner
-                        visible: false
-                        width: parent.width
-                        height: units.gu(4)
-                        color: LomiriColors.orange
-
-                        Label {
-                            anchors.centerIn: parent
-                            text: i18n.tr('Offline - showing cached music')
-                        }
-                    }
+                    OfflineBanner { id: offlineBanner }
 
                     Repeater {
                         id: sectionRepeater
@@ -1164,18 +1155,6 @@ MainView {
 
     Component {
         id: errorPageComponent
-
-        Page {
-            property string message: i18n.tr('Could not open the local database')
-
-            header: PageHeader {
-                title: i18n.tr('Power Ampache')
-            }
-
-            Label {
-                anchors.centerIn: parent
-                text: message
-            }
-        }
+        ErrorPage { }
     }
 }
