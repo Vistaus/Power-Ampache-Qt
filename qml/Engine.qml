@@ -4,239 +4,272 @@
  */
 
 import QtQuick 2.7
-import QtMultimedia 5.0
+import QtMultimedia 5.6
 
-// The playback engine in ONE object: the Audio element, the
-// device-only play()-swallow watchdog (playWatchdog + playKick), and
-// the queue manager (play order, shuffle, repeat). Consumers receive
-// this object as their "playback" injection; pythonBridge (the Python
-// element) is injected at the use site in Main.qml.
+// The playback engine in ONE object. Architecture follows the
+// ut-sonic-player pattern (store-shipped, device-tested):
+// - ONE MediaPlayer with a native Playlist attached: the media-hub
+//   owns the queue and advances tracks ITSELF. QML-side advancement
+//   cannot work while the app is suspended (Lomiri freezes suspended
+//   apps), but the hub is a system service and keeps running.
+// - Warm-up priming: media-hub wedges PAUSED and silently drops
+//   play() the first time it is asked to play after boot or a long
+//   suspend. A SEPARATE MediaPlayer does not help - every instance
+//   opens its own hub session - so the priming goes through THIS
+//   player, on a bundled silence file, at startup and on every
+//   re-activation, consuming the swallow before any user tap.
+// - Supervisor watchdog: if play() is still swallowed, retry until
+//   the position provably advances (capped; honest error at the
+//   limit instead of silent stuck-ness).
+// Consumers receive this object as their "playback" injection;
+// pythonBridge (the Python element) is injected in Main.qml.
 Item {
     id: engine
 
     property var pythonBridge
     property alias audioElement: audio
 
-    Audio {
-        id: audio
-        // No auto-play: source is set only by the queue logic below.
-
-        onStopped: {
-            // Natural end goes through engine.onNaturalEnd() (repeat
-            // 'one' replays there, and ONLY there). Setting a new source
-            // also stops playback, so gate strictly on EndOfMedia.
-            if (status === MediaPlayer.EndOfMedia) {
-                engine.onNaturalEnd()
-            }
-        }
-    }
-
-    // Watchdog for the device-only media-hub first-play swallow: the hub
-    // session drops play() until a pause() has primed its state machine.
-    // 2s after every play() we check whether playback actually advanced.
-    Timer {
-        id: playWatchdog
-        interval: 2000
-        onTriggered: engine.playWatchdogCheck()
-    }
-
-    // The kick itself: pause() then play(), the sequence proven to work
-    // manually. 1000ms gap - replicates the twice-proven manual gap from
-    // the device logs; shorter may race the hub's pause state transition.
-    Timer {
-        id: playKick
-        interval: 1000
-        onTriggered: audio.play()
-    }
-
-    // The ONE owner of play order. queue holds song dicts as returned
-    // by bridge.getAlbumSongs (id, title, trackNumber, artistName,
-    // albumId, albumName, time, imageUrl).
-    // comes NEXT without mutating the queue; repeat is 'off' | 'all'
-    // | 'one'. Queue editing is future work.
+    // Song metadata PARALLEL to hubPlaylist's URLs (same order, same
+    // indices): the playlist holds only stream URLs, the UI reads
+    // titles/artists from here. queue holds song dicts as returned by
+    // bridge.getAlbumSongs (id, title, trackNumber, artistName,
+    // albumId, albumName, time, imageUrl). Shuffle shuffles this
+    // array eagerly at playFrom() time; the hub never reshuffles.
+    // repeat is 'off' | 'all' | 'one'; the playbackMode binding maps
+    // it to hub-native behavior.
     property var queue: []
-    property int currentIndex: -1
     property bool shuffle: false
-    property string repeat: 'off'   // 'off' | 'all' | 'one'
-    // Indices already played in shuffle mode: no repeats until the
-    // queue is exhausted. Reset by playFrom() and toggleShuffle().
-    property var playedIndices: []
-    // Set by playCurrentSong(); the playWatchdog timer consumes it
-    // to detect a swallowed play (device-only).
-    property bool playbackKickPending: false
-    readonly property var currentSong: (currentIndex >= 0 && currentIndex < queue.length) ? queue[currentIndex] : null
+    property string repeat: 'off'
+    // JS mirror of hubPlaylist.currentIndex. The hub updates
+    // currentIndex asynchronously, which races UI bindings, so all
+    // reads go through this sync'd copy.
+    property int playerIndex: -1
+    readonly property var currentSong: (playerIndex >= 0 && playerIndex < queue.length) ? queue[playerIndex] : null
     readonly property bool playing: audio.playbackState === MediaPlayer.PlayingState
 
+    // True while the warm-up silence is running through the hub.
+    property bool warmingUp: false
+
+    // Suppresses onCurrentIndexChanged during our own playlist
+    // surgery (clear/addItems).
+    property bool rebuilding: false
+
     // Core contract: tap in the middle of any list plays the whole
-    // list from there (album now; playlists later).
+    // list from there (album now; playlists later). The whole queue
+    // is handed to the hub as stream URLs in one bridge call.
     function playFrom(list, startIndex) {
-        queue = list
-        currentIndex = startIndex
-        playedIndices = [startIndex]
-        playCurrentSong()
+        warmingUp = false   // a real request overrides an in-flight warm-up
+        // Eager shuffle (sonic pattern): the chosen song first, the
+        // rest shuffled behind it. Applies at queue start only;
+        // toggling shuffle mid-queue takes effect on the next
+        // playFrom().
+        var eff = list.slice()
+        var start = startIndex
+        if (shuffle && eff.length > 1) {
+            var chosen = eff.splice(startIndex, 1)[0]
+            for (var i = eff.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1))
+                var tmp = eff[i]; eff[i] = eff[j]; eff[j] = tmp
+            }
+            eff.unshift(chosen)
+            start = 0
+        }
+        // DEFAULT stats (stats argument omitted on purpose): real
+        // user plays feed the listen history. Never log the URLs -
+        // they embed the live session token.
+        var ids = []
+        for (var k = 0; k < eff.length; k++) {
+            ids.push(eff[k].id)
+        }
+        pythonBridge.call('bridge.getStreamUrls', [ids], function(result) {
+            if (!result || !result.ok) {
+                // Leave the player stopped; error surfacing is future
+                // work.
+                return
+            }
+            queue = eff
+            playerIndex = start
+            rebuilding = true
+            hubPlaylist.clear()
+            hubPlaylist.addItems(result.urls)
+            rebuilding = false
+            hubPlaylist.currentIndex = start
+            playWithWatchdog()
+        })
     }
 
     function togglePlayPause() {
         if (audio.playbackState === MediaPlayer.PlayingState) {
+            playWatchdog.stop()
             audio.pause()
         } else if (currentSong !== null) {
-            audio.play()
+            playWithWatchdog()
         }
     }
 
     function toggleShuffle() {
         shuffle = !shuffle
-        // Re-seed the played-set with the current song so it is never
-        // re-picked (randomUnplayedIndex also excludes it directly).
-        playedIndices = currentIndex >= 0 ? [currentIndex] : []
     }
 
     function cycleRepeat() {
         repeat = repeat === 'off' ? 'all' : (repeat === 'all' ? 'one' : 'off')
     }
 
-    // A random queue index not yet played in shuffle mode; -1 when the
-    // queue is exhausted. Never returns the current index.
-    function randomUnplayedIndex() {
-        var unplayed = []
-        for (var i = 0; i < queue.length; i++) {
-            if (i !== currentIndex && playedIndices.indexOf(i) === -1) {
-                unplayed.push(i)
-            }
-        }
-        if (unplayed.length === 0) {
-            return -1
-        }
-        return unplayed[Math.floor(Math.random() * unplayed.length)]
-    }
-
-    // Natural end of a song (Audio EndOfMedia). Repeat 'one' replays
-    // here and ONLY here - manual prev/next taps always move.
-    function onNaturalEnd() {
-        if (repeat === 'one' && currentSong !== null) {
-            // Seek-restart, not playCurrentSong(): re-fetching the URL
-            // with default stats would record a second play.
-            audio.seek(0)
-            audio.play()
-            return
-        }
-        next()
-    }
-
-    // Shared end-of-queue behavior for next(): repeat 'all' wraps to
-    // the top, everything else keeps the stop-and-clear behavior.
-    function handleQueueEnd() {
-        if (repeat === 'all' && queue.length > 0) {
-            currentIndex = 0
-            playedIndices = [0]
-            playCurrentSong()
-        } else {
-            audio.stop()
-            currentIndex = -1
-        }
-    }
-
+    // Manual next/prev. "next does not enforce play" (sonic): the
+    // playlist move alone does not start a stopped player, so play()
+    // explicitly after moving. Prev at the first track does nothing
+    // (hub Sequential stops at index 0).
     function next() {
-        if (currentIndex < 0) {
+        if (playerIndex < 0) {
             return
         }
-        if (shuffle) {
-            var shuffledIndex = randomUnplayedIndex()
-            if (shuffledIndex >= 0) {
-                currentIndex = shuffledIndex
-                playedIndices.push(shuffledIndex)
-                playCurrentSong()
-            } else {
-                // Every song played: shuffle's end-of-queue.
-                handleQueueEnd()
+        if (playerIndex + 1 < queue.length) {
+            hubPlaylist.next()
+            if (audio.playbackState !== MediaPlayer.PlayingState) {
+                playWithWatchdog()
             }
-            return
-        }
-        if (currentIndex + 1 < queue.length) {
-            currentIndex = currentIndex + 1
-            playCurrentSong()
-        } else {
-            handleQueueEnd()
+        } else if (repeat === 'all') {
+            hubPlaylist.currentIndex = 0
+            if (audio.playbackState !== MediaPlayer.PlayingState) {
+                playWithWatchdog()
+            }
         }
     }
 
     function prev() {
-        if (currentIndex < 0) {
+        if (playerIndex <= 0) {
             return
         }
-        if (shuffle) {
-            var shuffledIndex = randomUnplayedIndex()
-            if (shuffledIndex >= 0) {
-                currentIndex = shuffledIndex
-                playedIndices.push(shuffledIndex)
-                playCurrentSong()
-            } else if (currentSong !== null) {
-                // Nothing unplayed: restart the current song, mirroring
-                // the first-track case below.
-                audio.seek(0)
-            }
-            return
-        }
-        if (currentIndex > 0) {
-            currentIndex = currentIndex - 1
-            playCurrentSong()
-        } else if (currentSong !== null) {
-            // First track restarts via seek - re-fetching the URL with
-            // default stats would record a second play.
-            audio.seek(0)
+        hubPlaylist.previous()
+        if (audio.playbackState !== MediaPlayer.PlayingState) {
+            playWithWatchdog()
         }
     }
 
-    function playCurrentSong() {
-        var song = currentSong
-        if (song === null) {
-            return
-        }
-        // DEFAULT stats (stats argument omitted on purpose): real user
-        // plays feed the listen history. any test or prefetch must pass stats=0.
-        // Never log result.url - it embeds the session token.
-        pythonBridge.call('bridge.getStreamUrl', [song.id], function(result) {
-            if (result && result.ok) {
-                audio.source = result.url
+    // --- Supervisor watchdog (sonic playWatchdog, album-scale) -----
+    // After every play(), check every 1.5s that the position actually
+    // advanced. Plain play() on retries 1-2; pause() + 100ms + play()
+    // from retry 3 on (streams need the pause-reset; the disruption
+    // is harmless because playback has not started). Success = the
+    // position moved. Cap 20 = give up honestly. Replaces the old
+    // one-shot kick, which had no answer if its own play() was
+    // swallowed.
+    property int watchdogRetries: 0
+    property int watchdogLastPos: 0
+    property bool watchdogEverPlayed: false
+
+    function playWithWatchdog() {
+        watchdogRetries = 0
+        watchdogLastPos = 0
+        watchdogEverPlayed = false
+        playWatchdog.restart()
+        audio.play()
+    }
+
+    Timer {
+        id: playWatchdog
+        interval: 1500
+        repeat: true
+        onTriggered: {
+            if (audio.position > engine.watchdogLastPos) {
+                engine.watchdogEverPlayed = true
+                stop()
+                if (engine.warmingUp) engine.finishWarmUp()
+                return
+            }
+            engine.watchdogRetries++
+            if (engine.watchdogRetries >= 20) {
+                stop()
+                if (engine.warmingUp) {
+                    engine.finishWarmUp()
+                    return
+                }
+                // Honest failure instead of silent stuck-ness. The
+                // hub left the queue untouched; the mini-bar hides.
+                console.log('playback failed: watchdog retry cap reached')
+                engine.playerIndex = -1
+                return
+            }
+            engine.watchdogLastPos = audio.position
+            if (engine.watchdogRetries >= 3) {
+                audio.pause()
+                watchdogPlayTimer.restart()
+            } else {
                 audio.play()
-                playbackKickPending = true
-                playWatchdog.restart()
             }
-            // On failure leave the player stopped; session 3 owns error
-            // surfacing.
-        })
+        }
     }
 
-    // Watchdog check, 2s after every play(). Device-proven signatures:
-    // - swallowed play: PausedState + position frozen at 0 -> the
-    //   pause+play kick, which the hub accepts;
-    // - working play: PlayingState + advancing position -> no kick
-    //   (desktop and normal starts);
-    // - slow buffer: Buffering/Stalled status -> re-arm the watchdog
-    //   and keep the flag, extending the deadline instead of silently
-    //   disabling the kick.
-    // One kick attempt only, never a kick loop: playbackKickPending is
-    // cleared before any kick.
-    function playWatchdogCheck() {
-        if (!playbackKickPending) {
+    Timer {
+        id: watchdogPlayTimer
+        interval: 100
+        onTriggered: audio.play()
+    }
+
+    // --- Warm-up priming (sonic _warmUpMediaHub) -------------------
+    // Drive THIS player through the bundled silence file so the hub
+    // session is primed before the user taps anything. Skipped once a
+    // real queue has played (playerIndex >= 0) and while anything is
+    // active - mid-queue reactivation relies on the hub still owning
+    // the tracklist, which is exactly what the device experiment
+    // tests.
+    function warmUpMediaHub() {
+        if (warmingUp || playerIndex >= 0
+                || audio.playbackState !== MediaPlayer.StoppedState) {
             return
         }
-        // The swallow check is device-proven - semantics unchanged.
-        // Flag cleared before the kick, as before.
-        if (audio.playbackState === MediaPlayer.PausedState && audio.position < 250) {
-            playbackKickPending = false
-            audio.pause()
-            playKick.restart()
-            return
+        warmingUp = true
+        rebuilding = true
+        hubPlaylist.clear()
+        hubPlaylist.addItem(Qt.resolvedUrl('../assets/warmup-silence.wav'))
+        rebuilding = false
+        hubPlaylist.currentIndex = 0
+        playWithWatchdog()
+    }
+
+    function finishWarmUp() {
+        warmingUp = false
+        playWatchdog.stop()
+        rebuilding = true
+        hubPlaylist.clear()
+        rebuilding = false
+    }
+
+    Component.onCompleted: warmUpMediaHub()
+
+    // Re-prime after returning from a background suspension, where
+    // the hub service may have been reaped - same cold-start risk as
+    // boot.
+    Connections {
+        target: Qt.application
+        onActiveChanged: {
+            if (Qt.application.active) engine.warmUpMediaHub()
         }
-        // Not swallowed, still buffering: keep the flag and re-arm so
-        // a slow network extends the deadline rather than consuming
-        // the one kick attempt.
-        if (audio.status === MediaPlayer.Buffering || audio.status === MediaPlayer.Stalled) {
-            playWatchdog.restart()
-            return
+    }
+
+    MediaPlayer {
+        id: audio
+        autoPlay: false
+        audioRole: MediaPlayer.MusicRole
+
+        playlist: Playlist {
+            id: hubPlaylist
+
+            // Hub-native repeat: 'one' loops the current item, 'all'
+            // wraps the queue, 'off' stops at the end. Note: the hub
+            // replays the SAME stream URL for 'one'; if it re-fetches
+            // the URL the server records a play per loop (the old
+            // engine seeked to 0 instead). Known edge, reviewed at PR.
+            playbackMode: engine.repeat === 'one' ? Playlist.CurrentItemInLoop
+                       : engine.repeat === 'all' ? Playlist.Loop
+                       : Playlist.Sequential
+
+            onCurrentIndexChanged: {
+                if (currentIndex < 0 || engine.rebuilding) {
+                    return
+                }
+                engine.playerIndex = currentIndex
+            }
         }
-        // Working play (or any other state): consume the flag, no kick.
-        playbackKickPending = false
     }
 }
