@@ -72,6 +72,26 @@ Page {
         header.sections.selectedIndex = selected
     }
 
+    // Total-time fallback (ms): the hub often cannot determine a
+    // streamed source's duration and reports 0, so the song
+    // payload's library duration ('time', seconds) stands in. A
+    // real duration from the player wins once reported.
+    function effectiveDurationMs() {
+        if (audioEngine.duration > 0) {
+            return audioEngine.duration
+        }
+        return playback.currentSong !== null ? playback.currentSong.time * 1000 : 0
+    }
+
+    // Imperative progress-bar maximum: the declarative binding on
+    // audioEngine.duration caused the same binding-loop warning as
+    // the time labels. Called at completion, on song change, and on
+    // duration change. Guard 1 keeps maximumValue above minimumValue.
+    function refreshProgressMaximum() {
+        var dur = effectiveDurationMs()
+        progressBar.maximumValue = dur > 0 ? dur : 1
+    }
+
     // Now Playing section.
     Flickable {
         id: nowPlayingFlickable
@@ -154,8 +174,13 @@ Page {
                         rightMargin: units.gu(4)
                     }
                     minimumValue: 0
-                    maximumValue: audioEngine.duration > 0 ? audioEngine.duration : 1
-                    value: audioEngine.position
+                    // No bindings on audioEngine.duration/position:
+                    // same binding-loop cure as the time labels.
+                    // maximumValue is seeded/refreshed imperatively
+                    // via refreshProgressMaximum(); value is driven
+                    // by timeTicker below.
+                    maximumValue: 1
+                    value: 0
                 }
 
                 Label {
@@ -280,7 +305,7 @@ Page {
 
             Rectangle {
                 anchors.fill: parent
-                color: index === playback.currentIndex
+                color: index === playback.playerIndex
                        ? theme.palette.normal.base : 'transparent'
             }
 
@@ -296,7 +321,7 @@ Page {
                 Label {
                     width: parent.width
                     text: modelData.title
-                    font.bold: index === playback.currentIndex
+                    font.bold: index === playback.playerIndex
                     elide: Text.ElideRight
                 }
 
@@ -348,17 +373,22 @@ Page {
         running: audioEngine.playbackState === MediaPlayer.PlayingState
         onTriggered: {
             // audioEngine.position/duration are ms; formatDuration
-            // takes seconds.
+            // takes seconds. effectiveDurationMs covers the hub's
+            // zero-duration streams with the library duration.
             positionLabel.text = playerPage.formatDuration(audioEngine.position / 1000)
-            durationLabel.text = playerPage.formatDuration(audioEngine.duration / 1000)
+            durationLabel.text = playerPage.formatDuration(playerPage.effectiveDurationMs() / 1000)
+            progressBar.value = audioEngine.position
         }
     }
 
     Component.onCompleted: {
         // Page (re)opened with a track already loaded but paused:
-        // seed current values so the labels are never blank.
+        // seed current values so the labels and the progress bar
+        // are never blank.
         positionLabel.text = playerPage.formatDuration(audioEngine.position / 1000)
-        durationLabel.text = playerPage.formatDuration(audioEngine.duration / 1000)
+        durationLabel.text = playerPage.formatDuration(playerPage.effectiveDurationMs() / 1000)
+        playerPage.refreshProgressMaximum()
+        progressBar.value = audioEngine.position
     }
 
     Connections {
@@ -380,9 +410,27 @@ Page {
             positionLabel.text = playerPage.formatDuration(0)
             durationLabel.text = playerPage.formatDuration(
                 playback.currentSong !== null ? playback.currentSong.time : 0)
+            // Reset the bar alongside the clock. If the hub still
+            // reports the previous track's duration here, the
+            // onDurationChanged handler below corrects the maximum
+            // as soon as the new source's duration arrives.
+            progressBar.value = 0
+            playerPage.refreshProgressMaximum()
             if (playerPageHeader.sections.selectedIndex === 2) {
                 playerPage.loadLyrics()
             }
+        }
+    }
+
+    // A real duration arriving from the player supersedes the
+    // library fallback: refresh the bar maximum and the total-time
+    // label imperatively (signal handler, not a binding, so no
+    // binding loop on audioEngine.duration).
+    Connections {
+        target: audioEngine
+        onDurationChanged: {
+            playerPage.refreshProgressMaximum()
+            durationLabel.text = playerPage.formatDuration(playerPage.effectiveDurationMs() / 1000)
         }
     }
 }

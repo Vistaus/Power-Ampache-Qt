@@ -171,7 +171,9 @@ Item {
         interval: 1500
         repeat: true
         onTriggered: {
-            if (audio.position > engine.watchdogLastPos) {
+            // The everPlayed latch (set by onPositionChanged) counts
+            // as success alongside a sampled position advance.
+            if (engine.watchdogEverPlayed || audio.position > engine.watchdogLastPos) {
                 engine.watchdogEverPlayed = true
                 stop()
                 if (engine.warmingUp) engine.finishWarmUp()
@@ -251,6 +253,20 @@ Item {
         id: audio
         autoPlay: false
         audioRole: MediaPlayer.MusicRole
+
+        // everPlayed latch: any forward progress proves the hub
+        // really played. The watchdog's 1.5s sampling can miss a
+        // short file (the warm-up silence) that already played
+        // through, so position itself records the proof. Lets the
+        // warm-up self-terminate once played instead of being
+        // replayed by watchdog retries. playWithWatchdog() clears
+        // the latch per attempt, so a stale value never fakes
+        // success for the next track.
+        onPositionChanged: {
+            if (position > 0) {
+                engine.watchdogEverPlayed = true
+            }
+        }
 
         playlist: Playlist {
             id: hubPlaylist
