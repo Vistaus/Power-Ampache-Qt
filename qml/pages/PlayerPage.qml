@@ -335,7 +335,10 @@ Page {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: playback.playFrom(playback.queue, index)
+                onClicked: {
+                    console.log('engine: queue tap index=' + index)
+                    playback.playFrom(playback.queue, index)
+                }
             }
         }
     }

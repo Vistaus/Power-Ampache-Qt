@@ -58,6 +58,7 @@ Item {
     // list from there (album now; playlists later). The whole queue
     // is handed to the hub as stream URLs in one bridge call.
     function playFrom(list, startIndex) {
+        console.log('engine: playFrom list=' + list.length + ' start=' + startIndex + ' shuffle=' + shuffle)
         warmingUp = false   // a real request overrides an in-flight warm-up
         // Eager shuffle (sonic pattern): the chosen song first, the
         // rest shuffled behind it. Applies at queue start only;
@@ -82,6 +83,7 @@ Item {
             ids.push(eff[k].id)
         }
         pythonBridge.call('bridge.getStreamUrls', [ids], function(result) {
+            console.log('engine: stream urls ok=' + (result ? result.ok : false) + ' count=' + (result && result.urls ? result.urls.length : 0))
             if (!result || !result.ok) {
                 // Leave the player stopped; error surfacing is future
                 // work.
@@ -90,9 +92,12 @@ Item {
             queue = eff
             playerIndex = start
             rebuilding = true
+            console.log('engine: hubPlaylist.clear()')
             hubPlaylist.clear()
+            console.log('engine: hubPlaylist.addItems count=' + result.urls.length)
             hubPlaylist.addItems(result.urls)
             rebuilding = false
+            console.log('engine: hubPlaylist.currentIndex ' + hubPlaylist.currentIndex + ' -> ' + start)
             hubPlaylist.currentIndex = start
             playWithWatchdog()
         })
@@ -129,6 +134,7 @@ Item {
                 playWithWatchdog()
             }
         } else if (repeat === 'all') {
+            console.log('engine: hubPlaylist.currentIndex ' + hubPlaylist.currentIndex + ' -> 0')
             hubPlaylist.currentIndex = 0
             if (audio.playbackState !== MediaPlayer.PlayingState) {
                 playWithWatchdog()
@@ -159,6 +165,7 @@ Item {
     property bool watchdogEverPlayed: false
 
     function playWithWatchdog() {
+        console.log('engine: playWithWatchdog armed state=' + audio.playbackState)
         watchdogRetries = 0
         watchdogLastPos = 0
         watchdogEverPlayed = false
@@ -171,10 +178,12 @@ Item {
         interval: 1500
         repeat: true
         onTriggered: {
+            console.log('engine: watchdog tick retries=' + engine.watchdogRetries + ' pos=' + audio.position + ' state=' + audio.playbackState)
             // The everPlayed latch (set by onPositionChanged) counts
             // as success alongside a sampled position advance.
             if (engine.watchdogEverPlayed || audio.position > engine.watchdogLastPos) {
                 engine.watchdogEverPlayed = true
+                console.log('engine: watchdog success reason=' + (engine.watchdogEverPlayed ? 'latch' : 'position') + ' warmingUp=' + engine.warmingUp)
                 stop()
                 if (engine.warmingUp) engine.finishWarmUp()
                 return
@@ -188,15 +197,18 @@ Item {
                 }
                 // Honest failure instead of silent stuck-ness. The
                 // hub left the queue untouched; the mini-bar hides.
+                console.log('engine: watchdog retry cap reached, giving up')
                 console.log('playback failed: watchdog retry cap reached')
                 engine.playerIndex = -1
                 return
             }
             engine.watchdogLastPos = audio.position
             if (engine.watchdogRetries >= 3) {
+                console.log('engine: watchdog action pause+100ms+play retry=' + engine.watchdogRetries)
                 audio.pause()
                 watchdogPlayTimer.restart()
             } else {
+                console.log('engine: watchdog action play retry=' + engine.watchdogRetries)
                 audio.play()
             }
         }
@@ -222,9 +234,12 @@ Item {
         }
         warmingUp = true
         rebuilding = true
+        console.log('engine: hubPlaylist.clear()')
         hubPlaylist.clear()
+        console.log('engine: hubPlaylist.addItem count=1 (warm-up silence)')
         hubPlaylist.addItem(Qt.resolvedUrl('../assets/warmup-silence.wav'))
         rebuilding = false
+        console.log('engine: hubPlaylist.currentIndex ' + hubPlaylist.currentIndex + ' -> 0')
         hubPlaylist.currentIndex = 0
         playWithWatchdog()
     }
@@ -233,6 +248,7 @@ Item {
         warmingUp = false
         playWatchdog.stop()
         rebuilding = true
+        console.log('engine: hubPlaylist.clear()')
         hubPlaylist.clear()
         rebuilding = false
     }
@@ -254,6 +270,9 @@ Item {
         autoPlay: false
         audioRole: MediaPlayer.MusicRole
 
+        onPlaybackStateChanged: console.log('engine: playbackState=' + playbackState)
+        onStatusChanged: console.log('engine: status=' + status)
+
         // everPlayed latch: any forward progress proves the hub
         // really played. The watchdog's 1.5s sampling can miss a
         // short file (the warm-up silence) that already played
@@ -264,6 +283,9 @@ Item {
         // success for the next track.
         onPositionChanged: {
             if (position > 0) {
+                if (!engine.watchdogEverPlayed) {
+                    console.log('engine: first position advance pos=' + position)
+                }
                 engine.watchdogEverPlayed = true
             }
         }
