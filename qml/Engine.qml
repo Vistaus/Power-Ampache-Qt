@@ -21,6 +21,11 @@ import QtMultimedia 5.6
 // - Supervisor watchdog: if play() is still swallowed, retry until
 //   the position provably advances (capped; honest error at the
 //   limit instead of silent stuck-ness).
+// - Stop-then-commit, target-first: the hub playlist is rebuilt
+//   only on a confirmed-stopped session (2s timeout fallback), and
+//   rotated so the tapped track is item 0. A currentIndex jump on a
+//   live session makes the hub open item 0, abandon the open, and
+//   wedge - it then accepts play() but never plays (device logs).
 // Consumers receive this object as their "playback" injection;
 // pythonBridge (the Python element) is injected in Main.qml.
 Item {
@@ -40,10 +45,16 @@ Item {
     property var queue: []
     property bool shuffle: false
     property string repeat: 'off'
-    // JS mirror of hubPlaylist.currentIndex. The hub updates
-    // currentIndex asynchronously, which races UI bindings, so all
-    // reads go through this sync'd copy.
+    // JS mirror of the hub position, derived through queueStart
+    // (below). The hub updates currentIndex asynchronously, which
+    // races UI bindings, so all reads go through this sync'd copy.
     property int playerIndex: -1
+    // Rotation offset between queue and the hub playlist: hub item 0
+    // holds queue[queueStart], so the UI position is always derived
+    // as playerIndex = (queueStart + hubIndex) % queue.length.
+    // queue keeps original album order; the hub playlist is the
+    // rotated view of it.
+    property int queueStart: 0
     readonly property var currentSong: (playerIndex >= 0 && playerIndex < queue.length) ? queue[playerIndex] : null
     readonly property bool playing: audio.playbackState === MediaPlayer.PlayingState
 
@@ -53,6 +64,17 @@ Item {
     // Suppresses onCurrentIndexChanged during our own playlist
     // surgery (clear/addItems).
     property bool rebuilding: false
+    // --- Stop-then-commit state ------------------------------------
+    // The next queue awaiting a safe commit point:
+    // {'songs': effective queue, 'start': tapped index, 'urls':
+    // rotated stream URLs}. Written by playFrom's bridge callback,
+    // consumed by commitQueue() exactly once.
+    property var pendingCommit: null
+    // State gate pairing one stop() with one StoppedState
+    // confirmation. StoppedState echoes from our own stop/clear
+    // during commit find this already false and are ignored - they
+    // can neither re-trigger nor advance anything.
+    property bool awaitingStop: false
 
     // Core contract: tap in the middle of any list plays the whole
     // list from there (album now; playlists later). The whole queue
@@ -89,18 +111,78 @@ Item {
                 // work.
                 return
             }
-            queue = eff
-            playerIndex = start
-            rebuilding = true
-            console.log('engine: hubPlaylist.clear()')
-            hubPlaylist.clear()
-            console.log('engine: hubPlaylist.addItems count=' + result.urls.length)
-            hubPlaylist.addItems(result.urls)
-            rebuilding = false
-            console.log('engine: hubPlaylist.currentIndex ' + hubPlaylist.currentIndex + ' -> ' + start)
-            hubPlaylist.currentIndex = start
-            playWithWatchdog()
+            // Target-first rotation: the tapped track's URL becomes
+            // hub item 0, the rest of the queue follows in order,
+            // and the tracks before the tapped one append at the
+            // end. The hub therefore never sees an index jump - item
+            // 0 is always what it opens first (a mid-flight jump is
+            // exactly what wedged it in the device logs). queue
+            // itself keeps original album order for the UI.
+            var rotated = result.urls.slice(start).concat(result.urls.slice(0, start))
+            pendingCommit = {'songs': eff, 'start': start, 'urls': rotated}
+            requestCommit()
         })
+    }
+
+    // Stop-then-commit: rebuilding the hub playlist while anything
+    // is loaded is forbidden - a clear+addItems on a live session
+    // wedges the hub (it accepts play() but never plays). Already
+    // stopped = commit immediately; otherwise stop() first and defer
+    // the rebuild until StoppedState confirms, with a 2s timeout
+    // fallback so a tap is never dropped.
+    function requestCommit() {
+        if (audio.playbackState === MediaPlayer.StoppedState) {
+            commitQueue()
+            return
+        }
+        if (awaitingStop) {
+            // A stop is already in flight; its confirmation will
+            // commit the latest pendingCommit.
+            return
+        }
+        console.log('engine: commit stop requested state=' + audio.playbackState)
+        // Silence the watchdog while the old session winds down -
+        // its retries would play() the very session being stopped.
+        // commitQueue() re-arms it for the new queue.
+        playWatchdog.stop()
+        watchdogPlayTimer.stop()
+        awaitingStop = true
+        stopConfirmTimer.start()
+        audio.stop()
+    }
+
+    // The ONLY place the hub playlist is mutated, entered solely
+    // from a confirmed (or timed-out) stopped state. currentIndex is
+    // assigned here and nowhere else, and only while the fresh
+    // playlist still sits at -1: after addItems the hub opens item 0
+    // on its own, and a second explicit index assignment on a live
+    // session is what wedged it (open item 0, abandon, re-open).
+    // Rotation makes the tapped track item 0, so no jump is ever
+    // needed.
+    function commitQueue() {
+        var pending = pendingCommit
+        pendingCommit = null
+        if (!pending) {
+            return
+        }
+        queue = pending.songs
+        queueStart = pending.start
+        console.log('engine: commit rebuilding hub playlist count=' + pending.urls.length)
+        rebuilding = true
+        console.log('engine: hubPlaylist.clear()')
+        hubPlaylist.clear()
+        console.log('engine: hubPlaylist.addItems count=' + pending.urls.length)
+        hubPlaylist.addItems(pending.urls)
+        rebuilding = false
+        if (hubPlaylist.currentIndex < 0) {
+            console.log('engine: hubPlaylist.currentIndex ' + hubPlaylist.currentIndex + ' -> 0')
+            hubPlaylist.currentIndex = 0
+        }
+        // Synchronous mirror of the hub position (hubIndex 0 after a
+        // fresh build): the hub's own currentIndex update is async
+        // and races UI bindings.
+        playerIndex = queue.length > 0 ? queueStart % queue.length : -1
+        playWithWatchdog()
     }
 
     function togglePlayPause() {
@@ -122,28 +204,30 @@ Item {
 
     // Manual next/prev. "next does not enforce play" (sonic): the
     // playlist move alone does not start a stopped player, so play()
-    // explicitly after moving. Prev at the first track does nothing
-    // (hub Sequential stops at index 0).
+    // explicitly after moving.
     function next() {
         if (playerIndex < 0) {
             return
         }
-        if (playerIndex + 1 < queue.length) {
-            hubPlaylist.next()
-            if (audio.playbackState !== MediaPlayer.PlayingState) {
-                playWithWatchdog()
-            }
-        } else if (repeat === 'all') {
-            console.log('engine: hubPlaylist.currentIndex ' + hubPlaylist.currentIndex + ' -> 0')
-            hubPlaylist.currentIndex = 0
-            if (audio.playbackState !== MediaPlayer.PlayingState) {
-                playWithWatchdog()
-            }
+        // Hub-advance only: repeat 'all' wraps natively
+        // (Playlist.Loop), so the old explicit wrap-to-0 index
+        // assignment is removed - no index assignments outside
+        // commit. At the last hub item with repeat off, Sequential
+        // clamps and the advance is a no-op.
+        hubPlaylist.next()
+        if (audio.playbackState !== MediaPlayer.PlayingState) {
+            playWithWatchdog()
         }
     }
 
     function prev() {
-        if (playerIndex <= 0) {
+        // Behavior change under rotation: the guard is the HUB's
+        // index, not the queue position. Hub item 0 is the tapped
+        // track (the rotated start); the tracks before it wrapped to
+        // the END of the hub playlist, so prev() never walks back
+        // into them - they are reached only by playing the queue
+        // through.
+        if (playerIndex < 0 || hubPlaylist.currentIndex <= 0) {
             return
         }
         hubPlaylist.previous()
@@ -179,9 +263,13 @@ Item {
         repeat: true
         onTriggered: {
             console.log('engine: watchdog tick retries=' + engine.watchdogRetries + ' pos=' + audio.position + ' state=' + audio.playbackState)
-            // The everPlayed latch (set by onPositionChanged) counts
-            // as success alongside a sampled position advance.
-            if (engine.watchdogEverPlayed || audio.position > engine.watchdogLastPos) {
+            // Proof of audio only: the everPlayed latch (set by
+            // onPositionChanged, itself gated on position > 0) or a
+            // sampled advance to a POSITIVE position. A wedged hub
+            // reports garbage negative positions; a recovery from
+            // garbage back to 0 must never count as "advanced".
+            if (engine.watchdogEverPlayed
+                    || (audio.position > 0 && audio.position > engine.watchdogLastPos)) {
                 engine.watchdogEverPlayed = true
                 console.log('engine: watchdog success reason=' + (engine.watchdogEverPlayed ? 'latch' : 'position') + ' warmingUp=' + engine.warmingUp)
                 stop()
@@ -191,6 +279,9 @@ Item {
             engine.watchdogRetries++
             if (engine.watchdogRetries >= 20) {
                 stop()
+                // Leave the hub in a clean stopped state - a wedged
+                // session must not linger half-open.
+                audio.stop()
                 if (engine.warmingUp) {
                     engine.finishWarmUp()
                     return
@@ -202,7 +293,15 @@ Item {
                 engine.playerIndex = -1
                 return
             }
-            engine.watchdogLastPos = audio.position
+            // Baseline discipline: only a positive sample becomes the
+            // new baseline. A negative or 0 sample is skipped
+            // entirely - adopting a garbage negative baseline would
+            // let a later 0 look like an advance.
+            if (audio.position > 0) {
+                engine.watchdogLastPos = audio.position
+            } else {
+                console.log('engine: watchdog skipped baseline update pos=' + audio.position)
+            }
             if (engine.watchdogRetries >= 3) {
                 console.log('engine: watchdog action pause+100ms+play retry=' + engine.watchdogRetries)
                 audio.pause()
@@ -218,6 +317,21 @@ Item {
         id: watchdogPlayTimer
         interval: 100
         onTriggered: audio.play()
+    }
+
+    // 2s fallback for the stop-then-commit: if no StoppedState
+    // confirmation arrives, commit anyway rather than drop the tap.
+    Timer {
+        id: stopConfirmTimer
+        interval: 2000
+        onTriggered: {
+            if (!engine.awaitingStop) {
+                return
+            }
+            engine.awaitingStop = false
+            console.log('engine: commit stop confirmation timeout, proceeding anyway')
+            engine.commitQueue()
+        }
     }
 
     // --- Warm-up priming (sonic _warmUpMediaHub) -------------------
@@ -270,7 +384,20 @@ Item {
         autoPlay: false
         audioRole: MediaPlayer.MusicRole
 
-        onPlaybackStateChanged: console.log('engine: playbackState=' + playbackState)
+        onPlaybackStateChanged: {
+            console.log('engine: playbackState=' + playbackState)
+            // Stop-then-commit gate: only a StoppedState answering
+            // OUR stop request opens the commit. The flag is
+            // consumed before commitQueue() runs, so StoppedState
+            // echoes from our own stop/clear during commit are
+            // ignored.
+            if (playbackState === MediaPlayer.StoppedState && engine.awaitingStop) {
+                engine.awaitingStop = false
+                stopConfirmTimer.stop()
+                console.log('engine: commit stopped confirmed')
+                engine.commitQueue()
+            }
+        }
         onStatusChanged: console.log('engine: status=' + status)
 
         // everPlayed latch: any forward progress proves the hub
@@ -303,10 +430,12 @@ Item {
                        : Playlist.Sequential
 
             onCurrentIndexChanged: {
-                if (currentIndex < 0 || engine.rebuilding) {
+                if (currentIndex < 0 || engine.rebuilding || engine.queue.length === 0) {
                     return
                 }
-                engine.playerIndex = currentIndex
+                // The hub playlist is queue rotated by queueStart -
+                // derive the UI position, never mirror the hub index.
+                engine.playerIndex = (engine.queueStart + currentIndex) % engine.queue.length
             }
         }
     }
