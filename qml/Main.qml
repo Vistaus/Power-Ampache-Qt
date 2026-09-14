@@ -29,6 +29,7 @@ MainView {
     height: units.gu(75)
 
     property bool justAuthenticated: false
+    property bool wideModeAllowed: false
 
     property var playerPageInstance: null
 
@@ -51,6 +52,22 @@ MainView {
             // forbidden from now on - this owns it.
             bottomMargin: miniBar.visible ? miniBar.height : 0
         }
+        // Two-column desktop layout. Gated on wideModeAllowed so the
+        // login page never shows an empty right pane. When no layout's
+        // 'when' matches (narrow window or login), APL falls back to a
+        // single full-width column. min != max on column 2 makes the
+        // divider draggable (built into APL).
+        layouts: PageColumnsLayout {
+            when: width > units.gu(80) && root.wideModeAllowed
+            PageColumn {
+                fillWidth: true
+            }
+            PageColumn {
+                minimumWidth: units.gu(30)
+                maximumWidth: units.gu(70)
+                preferredWidth: units.gu(50)
+            }
+        }
     }
 
     Engine {
@@ -64,7 +81,7 @@ MainView {
         openPlayerCallback: function() {
             // Guard against stacking a second player page.
             if (root.playerPageInstance === null) {
-                var incubator = pageLayout.addPageToCurrentColumn(
+                var incubator = pageLayout.addPageToNextColumn(
                     pageLayout.primaryPage, playerPageComponent)
                 if (incubator) {
                     incubator.onStatusChanged = function(status) {
@@ -93,8 +110,10 @@ MainView {
                     }
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
+                            root.wideModeAllowed = true
                             pageLayout.primaryPageSource = homePageComponent
                         } else {
+                            root.wideModeAllowed = false
                             pageLayout.primaryPageSource = loginPageComponent
                         }
                     })
@@ -121,6 +140,7 @@ MainView {
             pythonBridge: python
             authenticatedCallback: function() {
                 root.justAuthenticated = true
+                root.wideModeAllowed = true
                 pageLayout.primaryPageSource = homePageComponent
             }
         }
