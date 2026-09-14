@@ -44,7 +44,7 @@ with `feat/seek` on top.
 
 ## Testing status
 
-- **Desktop-tested only** as of this writing. Phone install pending
-  (version bump per install round). Soak in progress: late-stop-echo
-  handling (ignore + 400 ms re-arm window) and the EndOfMedia fallback
-  are under continued testing.
+- Phone installs and testing are ongoing alongside desktop (phone
+  tested since the v1.0.1 install on 09-12). Soak in progress:
+  late-stop-echo handling (ignore + 400 ms re-arm window) and the
+  EndOfMedia fallback are under continued testing.
