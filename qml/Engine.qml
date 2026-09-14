@@ -530,8 +530,10 @@ Item {
         }
         onStatusChanged: {
             console.log('engine: status=' + status)
-            // Arm the EndOfMedia fallback (never during warm-up).
-            if (status === MediaPlayer.EndOfMedia && !engine.warmingUp) {
+            // Arm the EndOfMedia fallback (never during warm-up; never in
+            // repeat-one - that loop is native and must not be interrupted).
+            if (status === MediaPlayer.EndOfMedia && !engine.warmingUp
+                    && engine.repeat !== 'one') {
                 engine.eomArmedIndex = hubPlaylist.currentIndex
                 eomFallbackTimer.restart()
             }
