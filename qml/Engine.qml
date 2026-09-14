@@ -82,6 +82,10 @@ Item {
     // during commit find this already false and are ignored - they
     // can neither re-trigger nor advance anything.
     property bool awaitingStop: false
+    // Timestamp (Date.now()) of the last commitQueue() rebuild.
+    // Anchors the 400ms window in which a StoppedState is known to
+    // be the old session's late teardown echo (sonic pattern).
+    property real lastCommitMs: 0
 
     // --- EndOfMedia fallback state ---------------------------------
     // Hub index captured at EndOfMedia; -2 = disarmed (hub indices
@@ -193,6 +197,7 @@ Item {
         if (!pending) {
             return
         }
+        engine.lastCommitMs = Date.now()
         queue = pending.songs
         queueStart = pending.start
         lastSampledPos = 0
@@ -491,6 +496,20 @@ Item {
                 stopConfirmTimer.stop()
                 console.log('engine: commit stopped confirmed')
                 engine.commitQueue()
+                return
+            }
+            if (playbackState === MediaPlayer.StoppedState
+                    && !engine.warmingUp
+                    && Date.now() - engine.lastCommitMs < 400) {
+                // Late echo of the old session's teardown (sonic pattern):
+                // re-play and re-arm the watchdog - NEVER pause() a live
+                // session (the pause killed item 0, status=8, device log).
+                // play() on a live session is harmless and re-emits
+                // PlayingState, un-poisoning the property; if the session is
+                // genuinely dead the watchdog escalates to pause+play itself.
+                console.log('engine: late stop echo within commit window, re-arming')
+                engine.playWithWatchdog()
+                return
             }
         }
         onStatusChanged: {
