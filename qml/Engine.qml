@@ -430,6 +430,7 @@ Item {
                        : Playlist.Sequential
 
             onCurrentIndexChanged: {
+                console.log('engine: hubPlaylist.currentIndex -> ' + currentIndex)
                 if (currentIndex < 0 || engine.rebuilding || engine.queue.length === 0) {
                     return
                 }
