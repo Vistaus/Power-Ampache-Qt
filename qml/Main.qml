@@ -30,6 +30,8 @@ MainView {
 
     property bool justAuthenticated: false
 
+    property var playerPageInstance: null
+
     function formatDuration(totalSeconds) {
         var seconds = Math.max(0, Math.floor(totalSeconds))
         var minutes = Math.floor(seconds / 60)
@@ -37,8 +39,8 @@ MainView {
         return minutes + ':' + (remainder < 10 ? '0' : '') + remainder
     }
 
-    PageStack {
-        id: pageStack
+    AdaptivePageLayout {
+        id: pageLayout
         anchors {
             left: parent.left
             right: parent.right
@@ -61,8 +63,19 @@ MainView {
         playback: engine
         openPlayerCallback: function() {
             // Guard against stacking a second player page.
-            if (pageStack.currentPage.objectName !== 'playerPage') {
-                pageStack.push(playerPageComponent)
+            if (root.playerPageInstance === null) {
+                var incubator = pageLayout.addPageToCurrentColumn(
+                    pageLayout.primaryPage, playerPageComponent)
+                if (incubator) {
+                    incubator.onStatusChanged = function(status) {
+                        if (status === Component.Ready) {
+                            root.playerPageInstance = incubator.object
+                            incubator.object.Component.destruction.connect(function() {
+                                root.playerPageInstance = null
+                            })
+                        }
+                    }
+                }
             }
         }
     }
@@ -75,14 +88,14 @@ MainView {
             importModule('bridge', function() {
                 python.call('bridge.init', [], function(initResult) {
                     if (!initResult || !initResult.ok) {
-                        pageStack.push(errorPageComponent)
+                        pageLayout.primaryPageSource = errorPageComponent
                         return
                     }
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
-                            pageStack.push(homePageComponent)
+                            pageLayout.primaryPageSource = homePageComponent
                         } else {
-                            pageStack.push(loginPageComponent)
+                            pageLayout.primaryPageSource = loginPageComponent
                         }
                     })
                 })
@@ -91,8 +104,13 @@ MainView {
 
         onError: {
             console.log('python error: ' + traceback)
-            pageStack.clear()
-            pageStack.push(errorPageComponent, { message: i18n.tr('Internal error') })
+            if (pageLayout.primaryPage) {
+                pageLayout.addPageToCurrentColumn(pageLayout.primaryPage,
+                                                  errorPageComponent,
+                                                  { message: i18n.tr('Internal error') })
+            } else {
+                pageLayout.primaryPageSource = errorPageComponent
+            }
         }
     }
 
@@ -103,8 +121,7 @@ MainView {
             pythonBridge: python
             authenticatedCallback: function() {
                 root.justAuthenticated = true
-                pageStack.clear()
-                pageStack.push(homePageComponent)
+                pageLayout.primaryPageSource = homePageComponent
             }
         }
     }
@@ -145,9 +162,9 @@ MainView {
 
         AlbumRow {
             openAlbumCallback: function(albumId, albumName) {
-                pageStack.push(albumPageComponent, {
-                    albumId: albumId, albumName: albumName
-                })
+                pageLayout.addPageToNextColumn(pageLayout.primaryPage,
+                                               albumPageComponent,
+                                               { albumId: albumId, albumName: albumName })
             }
         }
     }
