@@ -5,7 +5,6 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
-import QtMultimedia 5.0
 
 // Now Playing panel: artwork, title/artist/album labels, progress bar
 // with time labels, transport and shuffle/repeat rows, plus the
@@ -229,7 +228,7 @@ Flickable {
         id: timeTicker
         interval: 500
         repeat: true
-        running: audioEngine.playbackState === MediaPlayer.PlayingState
+        running: playback.playing
         onTriggered: {
             // audioEngine.position/duration are ms; formatDuration
             // takes seconds. effectiveDurationMs covers the hub's

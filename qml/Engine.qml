@@ -56,7 +56,14 @@ Item {
     // rotated view of it.
     property int queueStart: 0
     readonly property var currentSong: (playerIndex >= 0 && playerIndex < queue.length) ? queue[playerIndex] : null
-    readonly property bool playing: audio.playbackState === MediaPlayer.PlayingState
+    // Imperative "is playing" truth. NEVER bind this to
+    // audio.playbackState: a late StoppedState echo from the old
+    // session's teardown stomps playbackState while the new session
+    // actually plays (device log). Set true by onPlaybackStateChanged
+    // and togglePlayPause; playingTruthSampler alone owns false.
+    property bool playing: false
+    // Last position (ms) sampled by playingTruthSampler.
+    property int lastSampledPos: 0
 
     // True while the warm-up silence is running through the hub.
     property bool warmingUp: false
@@ -118,7 +125,23 @@ Item {
             // 0 is always what it opens first (a mid-flight jump is
             // exactly what wedged it in the device logs). queue
             // itself keeps original album order for the UI.
-            var rotated = result.urls.slice(start).concat(result.urls.slice(0, start))
+            var rotated
+            if (repeat === 'off') {
+                // Tail only: the hub playlist ends at the queue end,
+                // so the hub's native Sequential stop coincides with
+                // it. Wrapping the pre-tapped songs to the end would
+                // make one Sequential pass play every queue item once
+                // (a full cycle).
+                rotated = result.urls.slice(start)
+            } else {
+                rotated = result.urls.slice(start).concat(result.urls.slice(0, start))
+            }
+            // A repeat mode changed mid-queue takes full effect from
+            // the next playFrom: the playbackMode binding is live,
+            // but the playlist shape (tail vs full rotation) is fixed
+            // at commit. queue/playerIndex math is unchanged - with
+            // the tail, (queueStart + hubIndex) % queue.length never
+            // wraps.
             pendingCommit = {'songs': eff, 'start': start, 'urls': rotated}
             requestCommit()
         })
@@ -167,6 +190,7 @@ Item {
         }
         queue = pending.songs
         queueStart = pending.start
+        lastSampledPos = 0
         console.log('engine: commit rebuilding hub playlist count=' + pending.urls.length)
         rebuilding = true
         console.log('engine: hubPlaylist.clear()')
@@ -186,10 +210,14 @@ Item {
     }
 
     function togglePlayPause() {
-        if (audio.playbackState === MediaPlayer.PlayingState) {
+        if (engine.playing) {
             playWatchdog.stop()
+            engine.playing = false
             audio.pause()
         } else if (currentSong !== null) {
+            // Optimistic: the truth sampler corrects within 1s if the
+            // hub swallows the play.
+            engine.playing = true
             playWithWatchdog()
         }
     }
@@ -282,6 +310,7 @@ Item {
                 // Leave the hub in a clean stopped state - a wedged
                 // session must not linger half-open.
                 audio.stop()
+                engine.playing = false
                 if (engine.warmingUp) {
                     engine.finishWarmUp()
                     return
@@ -331,6 +360,29 @@ Item {
             engine.awaitingStop = false
             console.log('engine: commit stop confirmation timeout, proceeding anyway')
             engine.commitQueue()
+        }
+    }
+
+    // --- Truth sampler: position-proof "is playing" ----------------
+    // Always running. Position advancing past the last sample proves
+    // audio regardless of what playbackState says; no advance plus a
+    // non-PlayingState proves silence. Imperative Timer read, NOT a
+    // declarative binding on audio.position (binding loops).
+    Timer {
+        id: playingTruthSampler
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: {
+            if (audio.position > 0 && audio.position > engine.lastSampledPos) {
+                if (!engine.playing) {
+                    console.log('engine: playing repaired by position proof pos=' + audio.position)
+                }
+                engine.playing = true
+            } else if (audio.playbackState !== MediaPlayer.PlayingState) {
+                engine.playing = false
+            }
+            engine.lastSampledPos = audio.position
         }
     }
 
@@ -386,6 +438,12 @@ Item {
 
         onPlaybackStateChanged: {
             console.log('engine: playbackState=' + playbackState)
+            // True direction only: a spurious StoppedState echo must
+            // not freeze the UI, so no state here sets playing=false
+            // - playingTruthSampler owns that.
+            if (playbackState === MediaPlayer.PlayingState) {
+                engine.playing = true
+            }
             // Stop-then-commit gate: only a StoppedState answering
             // OUR stop request opens the commit. The flag is
             // consumed before commitQueue() runs, so StoppedState
