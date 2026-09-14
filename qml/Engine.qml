@@ -499,6 +499,15 @@ Item {
         }
         onStatusChanged: console.log('engine: status=' + status)
 
+        // Observability only: a failed stream URL is otherwise
+        // invisible - the playlist backend silently auto-advances
+        // past the failed item and the watchdog "recovers" playback
+        // of the wrong track. Policy (retry/skip) comes later, after
+        // logs from a real run.
+        onError: {
+            console.log('engine: stream error code=' + error + ' string="' + errorString + '"')
+        }
+
         // everPlayed latch: any forward progress proves the hub
         // really played. The watchdog's 1.5s sampling can miss a
         // short file (the warm-up silence) that already played
@@ -529,7 +538,8 @@ Item {
                        : Playlist.Sequential
 
             onCurrentIndexChanged: {
-                console.log('engine: hubPlaylist.currentIndex -> ' + currentIndex)
+                console.log('engine: hubPlaylist.currentIndex -> ' + currentIndex +
+                            ' playerIndex=' + ((engine.queueStart + currentIndex) % engine.queue.length))
                 if (currentIndex < 0 || engine.rebuilding || engine.queue.length === 0) {
                     return
                 }
