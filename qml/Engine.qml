@@ -64,6 +64,10 @@ Item {
     property bool playing: false
     // Last position (ms) sampled by playingTruthSampler.
     property int lastSampledPos: 0
+    // True for 1.5s after every playWithWatchdog; a StoppedState
+    // landing in this window that is not our own stop is the old
+    // session's late teardown echo.
+    property bool echoHealWindow: false
 
     // True while the warm-up silence is running through the hub.
     property bool warmingUp: false
@@ -282,6 +286,8 @@ Item {
         watchdogLastPos = 0
         watchdogEverPlayed = false
         playWatchdog.restart()
+        engine.echoHealWindow = true
+        echoHealTimer.restart()
         audio.play()
     }
 
@@ -346,6 +352,28 @@ Item {
         id: watchdogPlayTimer
         interval: 100
         onTriggered: audio.play()
+    }
+
+    // Closes the echo-heal window 1.5s after each playWithWatchdog.
+    Timer {
+        id: echoHealTimer
+        interval: 1500
+        repeat: false
+        onTriggered: engine.echoHealWindow = false
+    }
+
+    // Second half of the echo resync (pause + 100ms + play, the
+    // watchdog's proven pause-reset pattern). Re-asserts the playing
+    // mirror optimistically; playingTruthSampler corrects within 1s
+    // if the resync play is itself swallowed.
+    Timer {
+        id: echoResyncPlayTimer
+        interval: 100
+        repeat: false
+        onTriggered: {
+            audio.play()
+            engine.playing = true
+        }
     }
 
     // 2s fallback for the stop-then-commit: if no StoppedState
@@ -438,6 +466,19 @@ Item {
 
         onPlaybackStateChanged: {
             console.log('engine: playbackState=' + playbackState)
+            if (playbackState === MediaPlayer.StoppedState && engine.echoHealWindow
+                    && !engine.awaitingStop && !engine.warmingUp) {
+                // Late teardown echo from the old session: the state
+                // property is stuck at Stopped while audio actually
+                // plays, which also poisons the backend's EndOfMedia
+                // advance (dead stop instead of next song).
+                // pause+play resyncs the property.
+                console.log('engine: late stop echo in heal window, resyncing state')
+                engine.echoHealWindow = false
+                audio.pause()
+                echoResyncPlayTimer.restart()
+                return
+            }
             // True direction only: a spurious StoppedState echo must
             // not freeze the UI, so no state here sets playing=false
             // - playingTruthSampler owns that.
