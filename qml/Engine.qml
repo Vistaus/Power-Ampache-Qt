@@ -64,10 +64,6 @@ Item {
     property bool playing: false
     // Last position (ms) sampled by playingTruthSampler.
     property int lastSampledPos: 0
-    // True for 1.5s after every playWithWatchdog; a StoppedState
-    // landing in this window that is not our own stop is the old
-    // session's late teardown echo.
-    property bool echoHealWindow: false
 
     // True while the warm-up silence is running through the hub.
     property bool warmingUp: false
@@ -86,6 +82,11 @@ Item {
     // during commit find this already false and are ignored - they
     // can neither re-trigger nor advance anything.
     property bool awaitingStop: false
+
+    // --- EndOfMedia fallback state ---------------------------------
+    // Hub index captured at EndOfMedia; -2 = disarmed (hub indices
+    // are >= -1). Consumed by eomFallbackTimer.
+    property int eomArmedIndex: -2
 
     // Core contract: tap in the middle of any list plays the whole
     // list from there (album now; playlists later). The whole queue
@@ -286,8 +287,6 @@ Item {
         watchdogLastPos = 0
         watchdogEverPlayed = false
         playWatchdog.restart()
-        engine.echoHealWindow = true
-        echoHealTimer.restart()
         audio.play()
     }
 
@@ -354,28 +353,6 @@ Item {
         onTriggered: audio.play()
     }
 
-    // Closes the echo-heal window 1.5s after each playWithWatchdog.
-    Timer {
-        id: echoHealTimer
-        interval: 1500
-        repeat: false
-        onTriggered: engine.echoHealWindow = false
-    }
-
-    // Second half of the echo resync (pause + 100ms + play, the
-    // watchdog's proven pause-reset pattern). Re-asserts the playing
-    // mirror optimistically; playingTruthSampler corrects within 1s
-    // if the resync play is itself swallowed.
-    Timer {
-        id: echoResyncPlayTimer
-        interval: 100
-        repeat: false
-        onTriggered: {
-            audio.play()
-            engine.playing = true
-        }
-    }
-
     // 2s fallback for the stop-then-commit: if no StoppedState
     // confirmation arrives, commit anyway rather than drop the tap.
     Timer {
@@ -388,6 +365,35 @@ Item {
             engine.awaitingStop = false
             console.log('engine: commit stop confirmation timeout, proceeding anyway')
             engine.commitQueue()
+        }
+    }
+
+    // --- EndOfMedia fallback ---------------------------------------
+    // With playbackState poisoned by the late teardown echo, the
+    // backend may not advance the playlist at EndOfMedia (device
+    // log: status=7 then nothing). 1.5s after EoM, if the hub has
+    // not advanced by itself and the session is provably dead with
+    // songs remaining, advance via the soak-proven next-button path.
+    Timer {
+        id: eomFallbackTimer
+        interval: 1500
+        repeat: false
+        onTriggered: {
+            // a. The hub advanced by itself - normal case, do nothing.
+            if (hubPlaylist.currentIndex !== engine.eomArmedIndex) {
+                return
+            }
+            // b. Session alive (e.g. repeat-one reloop) - NEVER
+            // fight a live session.
+            if (audio.playbackState === MediaPlayer.PlayingState) {
+                return
+            }
+            // c. Natural end of the queue.
+            if ((engine.queueStart + hubPlaylist.currentIndex + 1) >= engine.queue.length) {
+                return
+            }
+            console.log('engine: eom fallback advanced the queue')
+            engine.next()
         }
     }
 
@@ -466,19 +472,9 @@ Item {
 
         onPlaybackStateChanged: {
             console.log('engine: playbackState=' + playbackState)
-            if (playbackState === MediaPlayer.StoppedState && engine.echoHealWindow
-                    && !engine.awaitingStop && !engine.warmingUp) {
-                // Late teardown echo from the old session: the state
-                // property is stuck at Stopped while audio actually
-                // plays, which also poisons the backend's EndOfMedia
-                // advance (dead stop instead of next song).
-                // pause+play resyncs the property.
-                console.log('engine: late stop echo in heal window, resyncing state')
-                engine.echoHealWindow = false
-                audio.pause()
-                echoResyncPlayTimer.restart()
-                return
-            }
+            // The late StoppedState teardown echo is known and
+            // deliberately ignored: the UI truth is engine.playing,
+            // and advancement is covered by the EndOfMedia fallback.
             // True direction only: a spurious StoppedState echo must
             // not freeze the UI, so no state here sets playing=false
             // - playingTruthSampler owns that.
@@ -497,7 +493,14 @@ Item {
                 engine.commitQueue()
             }
         }
-        onStatusChanged: console.log('engine: status=' + status)
+        onStatusChanged: {
+            console.log('engine: status=' + status)
+            // Arm the EndOfMedia fallback (never during warm-up).
+            if (status === MediaPlayer.EndOfMedia && !engine.warmingUp) {
+                engine.eomArmedIndex = hubPlaylist.currentIndex
+                eomFallbackTimer.restart()
+            }
+        }
 
         // Observability only: a failed stream URL is otherwise
         // invisible - the playlist backend silently auto-advances
