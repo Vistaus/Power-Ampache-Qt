@@ -85,6 +85,7 @@ MainView {
         libraryPageComponent: libraryPageComponent
         albumPageComponent: albumPageComponent
         playerPageComponent: playerPageComponent
+        playlistDetailPageComponent: playlistDetailPageComponent
         wideMode: root.wideMode
     }
 
@@ -166,7 +167,19 @@ MainView {
 
     Component {
         id: libraryPageComponent
-        LibraryPage { }
+        LibraryPage {
+            pythonBridge: python
+            openPlaylistCallback: navBar.openPlaylist
+        }
+    }
+
+    Component {
+        id: playlistDetailPageComponent
+        PlaylistDetailPage {
+            pythonBridge: python
+            playback: engine
+            formatDuration: root.formatDuration
+        }
     }
 
     Component {

@@ -18,6 +18,7 @@ Item {
     property var libraryPageComponent
     property var albumPageComponent
     property var playerPageComponent
+    property var playlistDetailPageComponent
     property bool wideMode
 
     // Instance/incubator tracking: pages cannot be reused, only
@@ -132,6 +133,18 @@ Item {
 
     function closeAlbum() {
         pageLayout.removePages(albumPageInstance)
+    }
+
+    function openPlaylist(playlistId, playlistName) {
+        console.log('navBar: openPlaylist wideMode=' + wideMode)
+        // Lands directly on top of the Library page in both layouts:
+        // single-column pushes onto the stack above it, and in
+        // two-column mode Library is the rightmost column so the
+        // same call stacks there too. The APL back action applies -
+        // no close action and no instance/incubator tracking.
+        pageLayout.addPageToNextColumn(
+            libraryPageInstance, playlistDetailPageComponent,
+            { playlistId: playlistId, playlistName: playlistName })
     }
 
     function openPlayer() {
