@@ -37,6 +37,8 @@ Page {
     property bool albumsLoaded: false
     property bool artistsComplete: false
     property bool artistsLoaded: false
+    property bool albumsFetching: false
+    property bool artistsFetching: false
     property int albumsOffset: 0
     property int artistsOffset: 0
 
@@ -44,7 +46,10 @@ Page {
     property var playlists: []
 
     function loadAlbumsChunk() {
+        if (albumsFetching) return
+        albumsFetching = true
         pythonBridge.call('bridge.getAlbumsPage', [libraryPage.albumsOffset, 100], function(result) {
+            libraryPage.albumsFetching = false
             if (result && result.ok) {
                 libraryPage.albums = result.albums
                 libraryPage.albumsComplete = result.complete
@@ -68,7 +73,10 @@ Page {
     }
 
     function loadArtistsChunk() {
+        if (artistsFetching) return
+        artistsFetching = true
         pythonBridge.call('bridge.getArtistsPage', [libraryPage.artistsOffset, 100], function(result) {
+            libraryPage.artistsFetching = false
             if (result && result.ok) {
                 libraryPage.artists = libraryPage.artists.concat(result.artists)
                 libraryPage.artistsComplete = result.complete
