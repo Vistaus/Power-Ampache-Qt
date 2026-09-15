@@ -45,10 +45,10 @@ Page {
             if (result && result.ok) {
                 libraryPage.albums = result.albums
                 libraryPage.albumsComplete = result.complete
-                libraryPage.albumsOffset = result.albums.length
+                libraryPage.albumsOffset += result.fetched   // server chunk size, not the cache size - the cache read-back is cumulative
                 libraryPage.albumsLoaded = true
                 console.log('libraryPage: albums chunk offset=' + libraryPage.albumsOffset
-                            + ' rows=' + result.albums.length + ' complete=' + result.complete)
+                            + ' rows=' + result.fetched + ' complete=' + result.complete)
             }
             // On failure the section keeps what it has; session 3
             // owns error surfacing.

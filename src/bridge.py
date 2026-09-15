@@ -257,7 +257,7 @@ def getPlaylists():
 
 
 def getAlbumsPage(offset, limit=100):
-    "Library Albums grid: fetch one chunk to grow the cache, then read back every cached album sorted by name; complete still reflects the fetched chunk, so Load-more visibility is unchanged."
+    "Library Albums grid: fetch one chunk to grow the cache, then read back every cached album sorted by name; fetched is the server chunk size (drives the next offset), complete still reflects the fetched chunk (drives Load-more visibility)."
     try:
         client = getClient()
         chunk = client.getAlbums(offset=offset, limit=limit)
@@ -277,7 +277,7 @@ def getAlbumsPage(offset, limit=100):
                 }
                 for row in cursor.fetchall()
             ]
-            return {'ok': True, 'albums': albums, 'complete': len(chunk) < limit}
+            return {'ok': True, 'albums': albums, 'fetched': len(chunk), 'complete': len(chunk) < limit}
         finally:
             connection.close()
     except Exception as exception:
