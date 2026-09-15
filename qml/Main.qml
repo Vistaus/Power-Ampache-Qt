@@ -29,6 +29,9 @@ MainView {
     height: units.gu(75)
 
     property bool justAuthenticated: false
+    property bool wideModeAllowed: false
+
+    property var playerPageInstance: null
 
     function formatDuration(totalSeconds) {
         var seconds = Math.max(0, Math.floor(totalSeconds))
@@ -37,8 +40,8 @@ MainView {
         return minutes + ':' + (remainder < 10 ? '0' : '') + remainder
     }
 
-    PageStack {
-        id: pageStack
+    AdaptivePageLayout {
+        id: pageLayout
         anchors {
             left: parent.left
             right: parent.right
@@ -48,6 +51,22 @@ MainView {
             // stack ends above the bar. Per-view bottomMargin lines are
             // forbidden from now on - this owns it.
             bottomMargin: miniBar.visible ? miniBar.height : 0
+        }
+        // Two-column desktop layout. Gated on wideModeAllowed so the
+        // login page never shows an empty right pane. When no layout's
+        // 'when' matches (narrow window or login), APL falls back to a
+        // single full-width column. min != max on column 2 makes the
+        // divider draggable (built into APL).
+        layouts: PageColumnsLayout {
+            when: width > units.gu(80) && root.wideModeAllowed
+            PageColumn {
+                fillWidth: true
+            }
+            PageColumn {
+                minimumWidth: units.gu(30)
+                maximumWidth: units.gu(70)
+                preferredWidth: units.gu(50)
+            }
         }
     }
 
@@ -61,8 +80,19 @@ MainView {
         playback: engine
         openPlayerCallback: function() {
             // Guard against stacking a second player page.
-            if (pageStack.currentPage.objectName !== 'playerPage') {
-                pageStack.push(playerPageComponent)
+            if (root.playerPageInstance === null) {
+                var incubator = pageLayout.addPageToNextColumn(
+                    pageLayout.primaryPage, playerPageComponent)
+                if (incubator) {
+                    incubator.onStatusChanged = function(status) {
+                        if (status === Component.Ready) {
+                            root.playerPageInstance = incubator.object
+                            incubator.object.Component.destruction.connect(function() {
+                                root.playerPageInstance = null
+                            })
+                        }
+                    }
+                }
             }
         }
     }
@@ -75,14 +105,16 @@ MainView {
             importModule('bridge', function() {
                 python.call('bridge.init', [], function(initResult) {
                     if (!initResult || !initResult.ok) {
-                        pageStack.push(errorPageComponent)
+                        pageLayout.primaryPageSource = errorPageComponent
                         return
                     }
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
-                            pageStack.push(homePageComponent)
+                            root.wideModeAllowed = true
+                            pageLayout.primaryPageSource = homePageComponent
                         } else {
-                            pageStack.push(loginPageComponent)
+                            root.wideModeAllowed = false
+                            pageLayout.primaryPageSource = loginPageComponent
                         }
                     })
                 })
@@ -91,8 +123,13 @@ MainView {
 
         onError: {
             console.log('python error: ' + traceback)
-            pageStack.clear()
-            pageStack.push(errorPageComponent, { message: i18n.tr('Internal error') })
+            if (pageLayout.primaryPage) {
+                pageLayout.addPageToCurrentColumn(pageLayout.primaryPage,
+                                                  errorPageComponent,
+                                                  { message: i18n.tr('Internal error') })
+            } else {
+                pageLayout.primaryPageSource = errorPageComponent
+            }
         }
     }
 
@@ -103,8 +140,8 @@ MainView {
             pythonBridge: python
             authenticatedCallback: function() {
                 root.justAuthenticated = true
-                pageStack.clear()
-                pageStack.push(homePageComponent)
+                root.wideModeAllowed = true
+                pageLayout.primaryPageSource = homePageComponent
             }
         }
     }
@@ -145,9 +182,9 @@ MainView {
 
         AlbumRow {
             openAlbumCallback: function(albumId, albumName) {
-                pageStack.push(albumPageComponent, {
-                    albumId: albumId, albumName: albumName
-                })
+                pageLayout.addPageToNextColumn(pageLayout.primaryPage,
+                                               albumPageComponent,
+                                               { albumId: albumId, albumName: albumName })
             }
         }
     }

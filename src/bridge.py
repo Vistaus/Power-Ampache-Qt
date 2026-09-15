@@ -229,6 +229,21 @@ def getStreamUrl(songId, stats=None):
         return _errorDict(exception)
 
 
+def getStreamUrls(songIds, stats=None):
+    """Return stream URLs for a list of song ids in one call, for the QML
+    Playlist architecture: the media-hub opens tracks itself, so the whole
+    queue is handed over as URLs at tap time. Pure URL building per id, no
+    network. The stats argument passes through verbatim to every URL; real
+    plays omit it. The URLs embed the live session token - never log them,
+    never persist them."""
+    try:
+        client = getClient()
+        urls = [client.getStreamUrl(songId, stats=stats) for songId in songIds]
+        return {'ok': True, 'urls': urls}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def getLyrics(songId):
     "Lyrics for the player page: the cached SongEntity.lyrics field via direct sqlite (local cache, no network), same pattern as getFavouriteAlbums."
     try:
