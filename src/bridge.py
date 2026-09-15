@@ -206,11 +206,54 @@ def getRandomAlbums(limit=_DEFAULT_LIMIT):
     return _albumList(lambda client: client.getRandomAlbums(limit=limit))
 
 
+def getPlaylists():
+    "Library Playlists section: fetch from server, read back from cache (getFavouriteAlbums pattern)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'playlists': []}
+        client = getClient()
+        # The library auto-paginates and persists every response; the
+        # return value is discarded, the cache DB is the source of truth.
+        client.getPlaylists()
+        connection = sqlite3.connect(dbPath)
+        try:
+            cursor = connection.execute(
+                'SELECT id, name, owner, items, type, artUrl FROM PlaylistEntity'
+            )
+            playlists = [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'owner': row[2],
+                    'items': row[3],
+                    'type': row[4],
+                    'artUrl': row[5],
+                }
+                for row in cursor.fetchall()
+            ]
+            return {'ok': True, 'playlists': playlists}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def getAlbumSongs(albumId):
     "Album drill-down: the album's tracks in the order the response gives, never re-sorted."
     try:
         client = getClient()
         songs = client.getAlbumSongs(albumId)
+        return {'ok': True, 'songs': [_songDict(song) for song in songs]}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getPlaylistSongs(playlistId):
+    "Playlist drill-down: the playlist's tracks in position order, never re-sorted."
+    try:
+        client = getClient()
+        songs = client.getSongsFromPlaylist(playlistId)
         return {'ok': True, 'songs': [_songDict(song) for song in songs]}
     except Exception as exception:
         return _errorDict(exception)
