@@ -28,6 +28,9 @@ Item {
     property var libraryIncubator: null
     property var albumIncubator: null
     property var playerIncubator: null
+    // Retry budget for rejected column-1 Library mounts (startup race
+    // against APL primary-page registration).
+    property int libraryMountRetries: 0
 
     height: units.gu(7)
 
@@ -49,8 +52,8 @@ Item {
     function openLibrary() {
         var incubator = pageLayout.addPageToCurrentColumn(
             pageLayout.primaryPage, libraryPageComponent)
-        libraryIncubator = incubator
         if (incubator) {
+            libraryIncubator = incubator
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     libraryPageInstance = incubator.object
@@ -70,10 +73,11 @@ Item {
         // The 2-column desktop mount: Library lives in column 1.
         var incubator = pageLayout.addPageToNextColumn(
             pageLayout.primaryPage, libraryPageComponent)
-        libraryIncubator = incubator
         if (incubator) {
+            libraryIncubator = incubator
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
+                    libraryMountRetries = 0
                     libraryPageInstance = incubator.object
                     incubator.object.Component.destruction.connect(function() {
                         libraryPageInstance = null
@@ -83,6 +87,15 @@ Item {
                     libraryIncubator = null
                 }
             }
+        } else {
+            // APL rejected the add (primary page not yet registered in
+            // its tree). Retry via the 300ms restore timer, capped.
+            console.log('navBar: mountLibraryDefault rejected, retry '
+                + libraryMountRetries)
+            if (libraryMountRetries < 20) {
+                libraryMountRetries = libraryMountRetries + 1
+                scheduleCol1Restore()
+            }
         }
     }
 
@@ -91,8 +104,8 @@ Item {
         var properties = { albumId: albumId, albumName: albumName }
         var incubator = pageLayout.addPageToNextColumn(
             pageLayout.primaryPage, albumPageComponent, properties)
-        albumIncubator = incubator
         if (incubator) {
+            albumIncubator = incubator
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     albumPageInstance = incubator.object
@@ -128,8 +141,8 @@ Item {
             var properties = {}
             var incubator = pageLayout.addPageToNextColumn(
                 pageLayout.primaryPage, playerPageComponent, properties)
-            playerIncubator = incubator
             if (incubator) {
+                playerIncubator = incubator
                 incubator.onStatusChanged = function(status) {
                     if (status === Component.Ready) {
                         playerPageInstance = incubator.object
@@ -165,8 +178,10 @@ Item {
         // Column-1 restore: fire only when column 1 is genuinely empty.
         // The primaryPage check covers the startup window in which
         // wideModeAllowed flips before primaryPageSource is assigned.
+        // parent === null means APL has not finished registering the page.
         if (wideMode
                 && pageLayout.primaryPage !== null
+                && pageLayout.primaryPage.parent !== null
                 && libraryPageInstance === null
                 && libraryIncubator === null
                 && albumPageInstance === null
