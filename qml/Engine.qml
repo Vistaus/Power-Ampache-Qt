@@ -65,6 +65,11 @@ Item {
     // Last position (ms) sampled by playingTruthSampler.
     property int lastSampledPos: 0
 
+    // media-hub's first position report after a manual seek() can be
+    // stale (jumps back toward 0 before settling) - same reporting
+    // class as the stuck-PAUSED cold start (sonic pattern).
+    property bool seekPending: false
+
     // True while the warm-up silence is running through the hub.
     property bool warmingUp: false
 
@@ -272,6 +277,17 @@ Item {
         if (audio.playbackState !== MediaPlayer.PlayingState) {
             playWithWatchdog()
         }
+    }
+
+    // Tap-to-jump seek (sonic _seekPending pattern): arm the
+    // stale-report drop, then seek. The drop is consumed in
+    // audio.onPositionChanged. No-op with nothing loaded.
+    function seekTo(ms) {
+        if (engine.currentSong === null) {
+            return
+        }
+        engine.seekPending = true
+        audio.seek(ms)
     }
 
     // --- Supervisor watchdog (sonic playWatchdog, album-scale) -----
@@ -514,8 +530,10 @@ Item {
         }
         onStatusChanged: {
             console.log('engine: status=' + status)
-            // Arm the EndOfMedia fallback (never during warm-up).
-            if (status === MediaPlayer.EndOfMedia && !engine.warmingUp) {
+            // Arm the EndOfMedia fallback (never during warm-up; never in
+            // repeat-one - that loop is native and must not be interrupted).
+            if (status === MediaPlayer.EndOfMedia && !engine.warmingUp
+                    && engine.repeat !== 'one') {
                 engine.eomArmedIndex = hubPlaylist.currentIndex
                 eomFallbackTimer.restart()
             }
@@ -539,6 +557,13 @@ Item {
         // the latch per attempt, so a stale value never fakes
         // success for the next track.
         onPositionChanged: {
+            // Sonic drops exactly one report after a manual seek; the
+            // everPlayed latch catches up on the next report, and the
+            // timeTicker re-syncs the bar within 500ms.
+            if (engine.seekPending) {
+                engine.seekPending = false
+                return
+            }
             if (position > 0) {
                 if (!engine.watchdogEverPlayed) {
                     console.log('engine: first position advance pos=' + position)

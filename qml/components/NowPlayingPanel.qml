@@ -119,6 +119,27 @@ Flickable {
                 value: 0
             }
 
+            // Finger-friendly hit target over the display-only bar.
+            MouseArea {
+                anchors.left: progressBar.left
+                anchors.verticalCenter: progressBar.verticalCenter
+                width: progressBar.width
+                height: units.gu(3)
+
+                onClicked: {
+                    if (nowPlayingFlickable.effectiveDurationMs() <= 0) {
+                        return
+                    }
+                    var fraction = Math.max(0, Math.min(1, mouse.x / progressBar.width))
+                    var targetMs = Math.round(fraction * progressBar.maximumValue)
+                    // The bar is display-only; this jump sets it imperatively
+                    // for instant feedback, then the 500ms timeTicker re-syncs
+                    // after the stale-report drop.
+                    progressBar.value = targetMs
+                    playback.seekTo(targetMs)
+                }
+            }
+
             Label {
                 id: positionLabel
                 anchors {
