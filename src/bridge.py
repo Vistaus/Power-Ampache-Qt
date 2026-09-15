@@ -218,8 +218,13 @@ def getPlaylists():
         client.getPlaylists()
         connection = sqlite3.connect(dbPath)
         try:
+            # Order: highest rated, flagged, owned by the logged-in user, smart playlists last, then insertion order.
             cursor = connection.execute(
-                'SELECT id, name, owner, items, type, artUrl FROM PlaylistEntity'
+                'SELECT id, name, owner, items, type, artUrl FROM PlaylistEntity '
+                'ORDER BY preciseRating DESC, rating DESC, flag DESC, '
+                'CASE WHEN owner = (SELECT username FROM CredentialsEntity LIMIT 1) THEN 0 ELSE 1 END, '
+                "CASE WHEN id LIKE 'smart\\_%' ESCAPE '\\' THEN 1 ELSE 0 END, "
+                'rowid ASC'
             )
             playlists = [
                 {
