@@ -5,27 +5,97 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import "../components"
 
 // Library browser. The header's built-in Sections switch the body:
-// Playlists is live content; Albums, Songs and Artists are labeled
-// stubs until their content lands. pythonBridge (the Python element)
-// and openPlaylistCallback(playlistId, playlistName) are injected at
-// the use site.
+// Playlists, Albums (chunked grid), Songs (recently played) and
+// Artists (chunked grid). pythonBridge (the Python element),
+// openPlaylistCallback(playlistId, playlistName), playback (the
+// queue manager), formatDuration(seconds) and
+// openAlbumCallback(albumId, albumName) are injected at the use site.
 Page {
     id: libraryPage
     objectName: 'libraryPage'
 
     property var pythonBridge
     property var openPlaylistCallback
+    property var playback
+    property var formatDuration
+    property var openAlbumCallback
+
+    // Albums/Artists grids grow chunk by chunk; recentSongs is
+    // replaced wholesale on every Songs selection.
+    property var albums: []
+    property var artists: []
+    property var recentSongs: []
+    property bool albumsComplete: false
+    property bool albumsLoaded: false
+    property bool artistsComplete: false
+    property bool artistsLoaded: false
+    property int albumsOffset: 0
+    property int artistsOffset: 0
 
     // Playlist dicts in the order the bridge returns them.
     property var playlists: []
+
+    function loadAlbumsChunk() {
+        pythonBridge.call('bridge.getAlbumsPage', [libraryPage.albumsOffset, 100], function(result) {
+            if (result && result.ok) {
+                libraryPage.albums = libraryPage.albums.concat(result.albums)
+                libraryPage.albumsComplete = result.complete
+                libraryPage.albumsOffset += result.albums.length
+                libraryPage.albumsLoaded = true
+                console.log('libraryPage: albums chunk offset=' + libraryPage.albumsOffset
+                            + ' rows=' + result.albums.length + ' complete=' + result.complete)
+            }
+            // On failure the section keeps what it has; session 3
+            // owns error surfacing.
+        })
+    }
+
+    function loadRecentSongs() {
+        pythonBridge.call('bridge.getRecentSongs', [50], function(result) {
+            if (result && result.ok) {
+                libraryPage.recentSongs = result.songs
+                console.log('libraryPage: recent songs rows=' + result.songs.length)
+            }
+        })
+    }
+
+    function loadArtistsChunk() {
+        pythonBridge.call('bridge.getArtistsPage', [libraryPage.artistsOffset, 100], function(result) {
+            if (result && result.ok) {
+                libraryPage.artists = libraryPage.artists.concat(result.artists)
+                libraryPage.artistsComplete = result.complete
+                libraryPage.artistsOffset += result.artists.length
+                libraryPage.artistsLoaded = true
+                console.log('libraryPage: artists chunk offset=' + libraryPage.artistsOffset
+                            + ' rows=' + result.artists.length + ' complete=' + result.complete)
+            }
+        })
+    }
 
     header: PageHeader {
         id: libraryHeader
         title: i18n.tr('Library')
         // sections is read-only: the model is assigned imperatively
         // in Component.onCompleted, never inline here.
+    }
+
+    Connections {
+        target: libraryHeader.sections
+        onSelectedIndexChanged: {
+            // Songs refetches every selection (the recent list
+            // changes as you play); Albums/Artists fetch chunk 0
+            // on first selection only.
+            if (libraryHeader.sections.selectedIndex === 1 && !libraryPage.albumsLoaded) {
+                libraryPage.loadAlbumsChunk()
+            } else if (libraryHeader.sections.selectedIndex === 2) {
+                libraryPage.loadRecentSongs()
+            } else if (libraryHeader.sections.selectedIndex === 3 && !libraryPage.artistsLoaded) {
+                libraryPage.loadArtistsChunk()
+            }
+        }
     }
 
     ListView {
@@ -110,20 +180,83 @@ Page {
         }
     }
 
-    Label {
+    GridView {
+        id: albumGridView
         anchors {
             top: libraryHeader.bottom
             left: parent.left
             right: parent.right
-            bottom: parent.bottom
+            bottom: loadMoreAlbumsButton.top
         }
         visible: libraryHeader.sections.selectedIndex === 1
-        text: i18n.tr('Albums')
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
+        clip: true
+        cellWidth: units.gu(11)
+        cellHeight: units.gu(14)
+        model: libraryPage.albums
+
+        delegate: Item {
+            width: albumGridView.cellWidth
+            height: albumGridView.cellHeight
+
+            LomiriShape {
+                id: albumCoverShape
+                anchors {
+                    top: parent.top
+                    topMargin: units.gu(1)
+                    horizontalCenter: parent.horizontalCenter
+                }
+                width: units.gu(9)
+                height: width
+                radius: 'small'
+                backgroundColor: theme.palette.normal.base
+                sourceFillMode: LomiriShape.PreserveAspectCrop
+                source: Image {
+                    source: modelData.artUrl || ''
+                    asynchronous: true
+                }
+            }
+
+            Label {
+                anchors {
+                    top: albumCoverShape.bottom
+                    topMargin: units.gu(0.5)
+                    left: parent.left
+                    leftMargin: units.gu(1)
+                    right: parent.right
+                    rightMargin: units.gu(1)
+                }
+                text: modelData.name
+                fontSize: 'small'
+                elide: Text.ElideRight
+                maximumLineCount: 2
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: libraryPage.openAlbumCallback(modelData.id, modelData.name)
+            }
+        }
     }
 
-    Label {
+    Button {
+        id: loadMoreAlbumsButton
+        anchors {
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+            leftMargin: units.gu(2)
+            rightMargin: units.gu(2)
+            bottomMargin: units.gu(1)
+        }
+        visible: libraryHeader.sections.selectedIndex === 1 && !libraryPage.albumsComplete
+        text: i18n.tr('Load more')
+        onClicked: libraryPage.loadAlbumsChunk()
+    }
+
+    ListView {
+        id: recentSongsListView
         anchors {
             top: libraryHeader.bottom
             left: parent.left
@@ -131,22 +264,106 @@ Page {
             bottom: parent.bottom
         }
         visible: libraryHeader.sections.selectedIndex === 2
-        text: i18n.tr('Songs')
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
+        clip: true
+        model: libraryPage.recentSongs
+
+        delegate: TrackDelegate {
+            width: recentSongsListView.width
+            playTrackCallback: function(rowIndex) {
+                // v1 semantics: the tapped song plays as a queue of one.
+                playback.playFrom([libraryPage.recentSongs[rowIndex]], 0)
+            }
+            formatDuration: libraryPage.formatDuration
+        }
     }
 
-    Label {
+    GridView {
+        id: artistGridView
         anchors {
             top: libraryHeader.bottom
             left: parent.left
             right: parent.right
-            bottom: parent.bottom
+            bottom: loadMoreArtistsButton.top
         }
         visible: libraryHeader.sections.selectedIndex === 3
-        text: i18n.tr('Artists')
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
+        clip: true
+        cellWidth: units.gu(11)
+        cellHeight: units.gu(16)
+        model: libraryPage.artists
+
+        delegate: Item {
+            width: artistGridView.cellWidth
+            height: artistGridView.cellHeight
+
+            LomiriShape {
+                id: artistCoverShape
+                anchors {
+                    top: parent.top
+                    topMargin: units.gu(1)
+                    horizontalCenter: parent.horizontalCenter
+                }
+                width: units.gu(9)
+                height: width
+                radius: 'small'
+                backgroundColor: theme.palette.normal.base
+                sourceFillMode: LomiriShape.PreserveAspectCrop
+                source: Image {
+                    source: modelData.artUrl || ''
+                    asynchronous: true
+                }
+            }
+
+            Label {
+                id: artistNameLabel
+                anchors {
+                    top: artistCoverShape.bottom
+                    topMargin: units.gu(0.5)
+                    left: parent.left
+                    leftMargin: units.gu(1)
+                    right: parent.right
+                    rightMargin: units.gu(1)
+                }
+                text: modelData.name
+                fontSize: 'small'
+                elide: Text.ElideRight
+                maximumLineCount: 2
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            Label {
+                anchors {
+                    top: artistNameLabel.bottom
+                    left: parent.left
+                    leftMargin: units.gu(1)
+                    right: parent.right
+                    rightMargin: units.gu(1)
+                }
+                text: modelData.albumCount + ' ' + i18n.tr('albums') + ', '
+                      + modelData.songCount + ' ' + i18n.tr('songs')
+                fontSize: 'x-small'
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            // Inert in v1: artist drill-down is a later round, so
+            // there is deliberately no MouseArea here.
+        }
+    }
+
+    Button {
+        id: loadMoreArtistsButton
+        anchors {
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+            leftMargin: units.gu(2)
+            rightMargin: units.gu(2)
+            bottomMargin: units.gu(1)
+        }
+        visible: libraryHeader.sections.selectedIndex === 3 && !libraryPage.artistsComplete
+        text: i18n.tr('Load more')
+        onClicked: libraryPage.loadArtistsChunk()
     }
 
     Component.onCompleted: {

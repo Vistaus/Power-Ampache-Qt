@@ -170,6 +170,9 @@ MainView {
         LibraryPage {
             pythonBridge: python
             openPlaylistCallback: navBar.openPlaylist
+            playback: engine
+            formatDuration: root.formatDuration
+            openAlbumCallback: navBar.openAlbum
         }
     }
 
