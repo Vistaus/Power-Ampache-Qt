@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-14 20:19+0000\n"
+"POT-Creation-Date: 2026-09-14 21:31+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:95
+#: ../qml/Main.qml:129
 msgid "Internal error"
 msgstr ""
 
@@ -58,39 +58,39 @@ msgstr ""
 msgid "Random"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:36
+#: ../qml/pages/LoginPage.qml:39
 msgid "Connect to your Ampache server"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:42
+#: ../qml/pages/LoginPage.qml:45
 msgid "Server URL"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:49
+#: ../qml/pages/LoginPage.qml:52
 msgid "Username"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:55
+#: ../qml/pages/LoginPage.qml:58
 msgid "Password"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:71
+#: ../qml/pages/LoginPage.qml:74
 msgid "Connect"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:81
+#: ../qml/pages/LoginPage.qml:84
 msgid "Could not save credentials"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:90
+#: ../qml/pages/LoginPage.qml:93
 msgid "Wrong username or password"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:92
+#: ../qml/pages/LoginPage.qml:95
 msgid "Server unreachable"
 msgstr ""
 
-#: ../qml/pages/LoginPage.qml:94
+#: ../qml/pages/LoginPage.qml:97
 msgid "Connection failed"
 msgstr ""
 
