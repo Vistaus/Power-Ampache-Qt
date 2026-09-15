@@ -33,6 +33,20 @@ Item {
     // against APL primary-page registration).
     property int libraryMountRetries: 0
 
+    // Birth-mode tracking: whether each page was created while the
+    // layout was already two-column. Single-born pages stay in the
+    // primary page's column-0 subtree when the layout grows and must
+    // be migrated (removed + reopened); wide-born pages are APL's
+    // business.
+    property bool libraryBirthWide: false
+    property bool albumBirthWide: false
+    property bool playerBirthWide: false
+
+    // Migration state for the single-to-two-column transition.
+    property string pendingReopen: ''   // '', 'player', 'album', 'library'
+    property var pendingAlbumId: null
+    property string pendingAlbumName: ''
+
     height: units.gu(7)
 
     function homeTapped() {
@@ -58,8 +72,10 @@ Item {
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     libraryPageInstance = incubator.object
+                    libraryBirthWide = false
                     incubator.object.Component.destruction.connect(function() {
                         libraryPageInstance = null
+                        libraryBirthWide = false
                     })
                     libraryIncubator = null
                 } else if (status === Component.Error) {
@@ -80,8 +96,10 @@ Item {
                 if (status === Component.Ready) {
                     libraryMountRetries = 0
                     libraryPageInstance = incubator.object
+                    libraryBirthWide = true
                     incubator.object.Component.destruction.connect(function() {
                         libraryPageInstance = null
+                        libraryBirthWide = false
                     })
                     libraryIncubator = null
                 } else if (status === Component.Error) {
@@ -110,6 +128,7 @@ Item {
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     albumPageInstance = incubator.object
+                    albumBirthWide = wideMode
                     // Two-column mount: the APL back action hides across
                     // columns and the nav bar is hidden, so assign the
                     // close action directly on the instance (function
@@ -121,6 +140,7 @@ Item {
                     }
                     incubator.object.Component.destruction.connect(function() {
                         albumPageInstance = null
+                        albumBirthWide = false
                         scheduleCol1Restore()
                     })
                     albumIncubator = null
@@ -159,12 +179,14 @@ Item {
                 incubator.onStatusChanged = function(status) {
                     if (status === Component.Ready) {
                         playerPageInstance = incubator.object
+                        playerBirthWide = wideMode
                         if (wideMode) {
                             incubator.object.wideMount = true
                             incubator.object.closeCallback = closePlayer
                         }
                         incubator.object.Component.destruction.connect(function() {
                             playerPageInstance = null
+                            playerBirthWide = false
                             scheduleCol1Restore()
                         })
                         playerIncubator = null
@@ -178,6 +200,57 @@ Item {
 
     function closePlayer() {
         pageLayout.removePages(playerPageInstance)
+    }
+
+    // Single-to-two-column migration: pages born while single-column
+    // live in the primary page's column-0 subtree and would strand
+    // column 1 empty after the layout grows. Remove them surgically
+    // (the primary page is never touched) and reopen the
+    // highest-priority one via migrationTimer.
+    function migrateToTwoColumns() {
+        console.log('navBar: migrateToTwoColumns'
+            + ' libraryInstance=' + (libraryPageInstance !== null)
+            + ' libraryBirthWide=' + libraryBirthWide
+            + ' albumInstance=' + (albumPageInstance !== null)
+            + ' albumBirthWide=' + albumBirthWide
+            + ' playerInstance=' + (playerPageInstance !== null)
+            + ' playerBirthWide=' + playerBirthWide)
+        var hasSingleLibrary = libraryPageInstance !== null && !libraryBirthWide
+        var hasSingleAlbum = albumPageInstance !== null && !albumBirthWide
+        var hasSinglePlayer = playerPageInstance !== null && !playerBirthWide
+        if (!hasSingleLibrary && !hasSingleAlbum && !hasSinglePlayer) {
+            // Nothing single-born: wide-born pages are APL's business;
+            // an empty column 1 falls through to maybeMountLibrary
+            // as today.
+            return
+        }
+        // Capture album data BEFORE removal.
+        if (hasSingleAlbum) {
+            pendingAlbumId = albumPageInstance.albumId
+            pendingAlbumName = albumPageInstance.albumName
+        }
+        // Surgical removal: each call drops that page and its
+        // subtree. Wide-born column-1 pages are a different subtree
+        // and survive.
+        if (hasSingleLibrary) {
+            pageLayout.removePages(libraryPageInstance)
+        }
+        if (hasSingleAlbum) {
+            pageLayout.removePages(albumPageInstance)
+        }
+        if (hasSinglePlayer) {
+            pageLayout.removePages(playerPageInstance)
+        }
+        // Reopen by priority: player first (locked decision), else
+        // album, else library.
+        if (hasSinglePlayer) {
+            pendingReopen = 'player'
+        } else if (hasSingleAlbum) {
+            pendingReopen = 'album'
+        } else {
+            pendingReopen = 'library'
+        }
+        migrationTimer.restart()
     }
 
     function maybeMountLibrary() {
@@ -252,12 +325,40 @@ Item {
         onTriggered: maybeMountLibrary()
     }
 
+    // Deferred reopen for migrateToTwoColumns. The 300ms deferral
+    // lets the destruction handlers of removed pages settle BEFORE
+    // the reopen, so the instance guards see a clean state (same
+    // discipline as scheduleCol1Restore).
+    Timer {
+        id: migrationTimer
+        interval: 300
+        repeat: false
+        onTriggered: {
+            console.log('navBar: migrationTimer reopen=' + pendingReopen)
+            if (pendingReopen === 'player') {
+                openPlayer()
+            } else if (pendingReopen === 'album') {
+                openAlbum(pendingAlbumId, pendingAlbumName)
+            } else if (pendingReopen === 'library') {
+                mountLibraryDefault()
+            }
+            pendingReopen = ''
+        }
+    }
+
     Connections {
         target: pageLayout
         onPrimaryPageChanged: maybeMountLibrary()
     }
 
     // Mounts the Library into column 1 when phone-landscape rotation
-    // engages 2-column mode.
-    onWideModeChanged: maybeMountLibrary()
+    // engages 2-column mode. Single-born pages are migrated FIRST so
+    // they reopen as column-1 citizens; maybeMountLibrary remains the
+    // unchanged fallthrough for the all-empty case.
+    onWideModeChanged: {
+        if (wideMode) {
+            migrateToTwoColumns()
+        }
+        maybeMountLibrary()
+    }
 }
