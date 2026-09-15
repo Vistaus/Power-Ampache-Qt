@@ -257,11 +257,29 @@ def getPlaylists():
 
 
 def getAlbumsPage(offset, limit=100):
-    "Library Albums grid: one chunk per call, complete=True when no more chunks."
+    "Library Albums grid: fetch one chunk to grow the cache, then read back every cached album sorted by name; complete still reflects the fetched chunk, so Load-more visibility is unchanged."
     try:
         client = getClient()
-        albums = client.getAlbums(offset=offset, limit=limit)
-        return {'ok': True, 'albums': [_albumDict(album) for album in albums], 'complete': len(albums) < limit}
+        chunk = client.getAlbums(offset=offset, limit=limit)
+        connection = sqlite3.connect(getDbPath())
+        try:
+            cursor = connection.execute(
+                'SELECT id, name, artistName, artUrl, year FROM AlbumEntity '
+                'ORDER BY name COLLATE NOCASE ASC'
+            )
+            albums = [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'artistName': row[2],
+                    'artUrl': row[3],
+                    'year': row[4],
+                }
+                for row in cursor.fetchall()
+            ]
+            return {'ok': True, 'albums': albums, 'complete': len(chunk) < limit}
+        finally:
+            connection.close()
     except Exception as exception:
         return _errorDict(exception)
 

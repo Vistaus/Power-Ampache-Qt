@@ -23,8 +23,10 @@ Page {
     property var formatDuration
     property var openAlbumCallback
 
-    // Albums/Artists grids grow chunk by chunk; recentSongs is
-    // replaced wholesale on every Songs selection.
+    // The Albums grid model is replaced wholesale on every chunk
+    // (the bridge returns the full sorted cache); the Artists grid
+    // grows chunk by chunk; recentSongs is replaced wholesale on
+    // every Songs selection.
     property var albums: []
     property var artists: []
     property var recentSongs: []
@@ -41,9 +43,9 @@ Page {
     function loadAlbumsChunk() {
         pythonBridge.call('bridge.getAlbumsPage', [libraryPage.albumsOffset, 100], function(result) {
             if (result && result.ok) {
-                libraryPage.albums = libraryPage.albums.concat(result.albums)
+                libraryPage.albums = result.albums
                 libraryPage.albumsComplete = result.complete
-                libraryPage.albumsOffset += result.albums.length
+                libraryPage.albumsOffset = result.albums.length
                 libraryPage.albumsLoaded = true
                 console.log('libraryPage: albums chunk offset=' + libraryPage.albumsOffset
                             + ' rows=' + result.albums.length + ' complete=' + result.complete)
@@ -190,8 +192,8 @@ Page {
         }
         visible: libraryHeader.sections.selectedIndex === 1
         clip: true
-        cellWidth: units.gu(11)
-        cellHeight: units.gu(14)
+        cellWidth: parent.width / 3
+        cellHeight: cellWidth * 14 / 11
         model: libraryPage.albums
 
         delegate: Item {
@@ -205,7 +207,7 @@ Page {
                     topMargin: units.gu(1)
                     horizontalCenter: parent.horizontalCenter
                 }
-                width: units.gu(9)
+                width: albumGridView.cellWidth - units.gu(2)
                 height: width
                 radius: 'small'
                 backgroundColor: theme.palette.normal.base
@@ -240,7 +242,7 @@ Page {
         }
     }
 
-    Button {
+    Item {
         id: loadMoreAlbumsButton
         anchors {
             left: parent.left
@@ -250,9 +252,21 @@ Page {
             rightMargin: units.gu(2)
             bottomMargin: units.gu(1)
         }
+        height: units.gu(5)
         visible: libraryHeader.sections.selectedIndex === 1 && !libraryPage.albumsComplete
-        text: i18n.tr('Load more')
-        onClicked: libraryPage.loadAlbumsChunk()
+
+        Label {
+            anchors.centerIn: parent
+            text: i18n.tr('Load more')
+            color: theme.palette.normal.backgroundSecondaryText
+            opacity: loadMoreMouseArea.pressed ? 0.4 : 1.0   // quiet press feedback, no chrome
+        }
+
+        MouseArea {
+            id: loadMoreMouseArea
+            anchors.fill: parent
+            onClicked: libraryPage.loadAlbumsChunk()
+        }
     }
 
     ListView {
@@ -287,8 +301,8 @@ Page {
         }
         visible: libraryHeader.sections.selectedIndex === 3
         clip: true
-        cellWidth: units.gu(11)
-        cellHeight: units.gu(16)
+        cellWidth: parent.width / 4
+        cellHeight: cellWidth * 16 / 11
         model: libraryPage.artists
 
         delegate: Item {
@@ -302,7 +316,7 @@ Page {
                     topMargin: units.gu(1)
                     horizontalCenter: parent.horizontalCenter
                 }
-                width: units.gu(9)
+                width: artistGridView.cellWidth - units.gu(2)
                 height: width
                 radius: 'small'
                 backgroundColor: theme.palette.normal.base
@@ -351,7 +365,7 @@ Page {
         }
     }
 
-    Button {
+    Item {
         id: loadMoreArtistsButton
         anchors {
             left: parent.left
@@ -361,9 +375,21 @@ Page {
             rightMargin: units.gu(2)
             bottomMargin: units.gu(1)
         }
+        height: units.gu(5)
         visible: libraryHeader.sections.selectedIndex === 3 && !libraryPage.artistsComplete
-        text: i18n.tr('Load more')
-        onClicked: libraryPage.loadArtistsChunk()
+
+        Label {
+            anchors.centerIn: parent
+            text: i18n.tr('Load more')
+            color: theme.palette.normal.backgroundSecondaryText
+            opacity: loadMoreArtistsMouseArea.pressed ? 0.4 : 1.0   // quiet press feedback, no chrome
+        }
+
+        MouseArea {
+            id: loadMoreArtistsMouseArea
+            anchors.fill: parent
+            onClicked: libraryPage.loadArtistsChunk()
+        }
     }
 
     Component.onCompleted: {
