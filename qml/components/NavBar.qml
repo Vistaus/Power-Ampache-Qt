@@ -261,10 +261,14 @@ Item {
             + ' albumIncubator=' + (albumIncubator !== null)
             + ' playerInstance=' + (playerPageInstance !== null)
             + ' playerIncubator=' + (playerIncubator !== null))
+        if (pendingReopen !== '') {
+            return
+        }
         // Column-1 restore: fire only when column 1 is genuinely empty.
         // The primaryPage check covers the startup window in which
         // wideModeAllowed flips before primaryPageSource is assigned.
         // parent === null means APL has not finished registering the page.
+        // A pending migration reopen owns column 1 until it lands.
         if (wideMode
                 && pageLayout.primaryPage !== null
                 && pageLayout.primaryPage.parent !== null
