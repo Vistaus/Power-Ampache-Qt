@@ -143,6 +143,18 @@ def _songDict(song):
     }
 
 
+def _artistDict(artist):
+    "Map an Artist domain object to a plain dict for QML."
+    return {
+        'id': artist.id,
+        'name': artist.name,
+        'albumCount': artist.albumCount,
+        'songCount': artist.songCount,
+        'artUrl': artist.artUrl,
+        'flag': artist.flag,
+    }
+
+
 def _albumList(fetcher):
     "Run a limit-bounded fetch; the library persists the response and reads back from the cache."
     try:
@@ -240,6 +252,36 @@ def getPlaylists():
             return {'ok': True, 'playlists': playlists}
         finally:
             connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getAlbumsPage(offset, limit=100):
+    "Library Albums grid: one chunk per call, complete=True when no more chunks."
+    try:
+        client = getClient()
+        albums = client.getAlbums(offset=offset, limit=limit)
+        return {'ok': True, 'albums': [_albumDict(album) for album in albums], 'complete': len(albums) < limit}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getArtistsPage(offset, limit=100):
+    "Library Artists grid: one chunk per call, complete=True when no more chunks."
+    try:
+        client = getClient()
+        artists = client.getArtists(offset=offset, limit=limit)
+        return {'ok': True, 'artists': [_artistDict(artist) for artist in artists], 'complete': len(artists) < limit}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getRecentSongs(limit=50):
+    "Library Songs section: recently played, capped, never a full sync."
+    try:
+        client = getClient()
+        songs = client.getRecentSongs(limit=limit)
+        return {'ok': True, 'songs': [_songDict(song) for song in songs]}
     except Exception as exception:
         return _errorDict(exception)
 
