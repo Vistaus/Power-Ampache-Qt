@@ -24,11 +24,14 @@ Page {
 
     Column {
         anchors {
-            left: parent.left
-            right: parent.right
+            horizontalCenter: parent.horizontalCenter
             top: pageHeader.bottom
-            margins: units.gu(4)
+            topMargin: units.gu(4)
         }
+        // Caps at 40gu and centers on wide desktop windows; on a 45gu
+        // phone page Math.min(45-8, 40) = 37gu, identical to the old
+        // full-width-minus-4gu-margins rendering.
+        width: Math.min(parent.width - units.gu(8), units.gu(40))
         spacing: units.gu(2)
 
         Label {
