@@ -30,7 +30,7 @@ MainView {
 
     property bool justAuthenticated: false
     property bool wideModeAllowed: false
-
+    readonly property bool wideMode: pageLayout.width > units.gu(80) && root.wideModeAllowed
     property var playerPageInstance: null
 
     function formatDuration(totalSeconds) {
@@ -47,21 +47,17 @@ MainView {
             right: parent.right
             top: parent.top
             bottom: parent.bottom
-            // The ONE reservation for the mini-bar: every page in the
-            // stack ends above the bar. Per-view bottomMargin lines are
-            // forbidden from now on - this owns it.
-            bottomMargin: miniBar.visible ? miniBar.height : 0
+            // The ONE reservation for the bottom bars: every page in the
+            // stack ends above them. Per-view bottomMargin is forbidden.
+            bottomMargin: (miniBar.visible ? miniBar.height : 0)
+                          + (navBar.visible ? navBar.height : 0)
         }
-        // Two-column desktop layout. Gated on wideModeAllowed so the
-        // login page never shows an empty right pane. When no layout's
-        // 'when' matches (narrow window or login), APL falls back to a
-        // single full-width column. min != max on column 2 makes the
-        // divider draggable (built into APL).
+        // Two-column desktop layout, gated on wideMode so the login page
+        // never shows an empty right pane. No match (narrow or login) =
+        // APL single-column fallback. min != max on col 2 = draggable divider.
         layouts: PageColumnsLayout {
-            when: width > units.gu(80) && root.wideModeAllowed
-            PageColumn {
-                fillWidth: true
-            }
+            when: root.wideMode
+            PageColumn { fillWidth: true }
             PageColumn {
                 minimumWidth: units.gu(30)
                 maximumWidth: units.gu(70)
@@ -78,6 +74,7 @@ MainView {
     MiniBar {
         id: miniBar
         playback: engine
+        navBar: navBar
         openPlayerCallback: function() {
             // Guard against stacking a second player page.
             if (root.playerPageInstance === null) {
@@ -89,12 +86,24 @@ MainView {
                             root.playerPageInstance = incubator.object
                             incubator.object.Component.destruction.connect(function() {
                                 root.playerPageInstance = null
+                                navBar.scheduleCol1Restore()
                             })
                         }
                     }
                 }
             }
         }
+    }
+
+    NavBar {
+        id: navBar
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        visible: root.wideModeAllowed && !root.wideMode
+        pageLayout: pageLayout
+        libraryPageComponent: libraryPageComponent
+        albumPageComponent: albumPageComponent
+        playerPageInstance: root.playerPageInstance
+        wideMode: root.wideMode
     }
 
     Python {
@@ -135,7 +144,6 @@ MainView {
 
     Component {
         id: loginPageComponent
-
         LoginPage {
             pythonBridge: python
             authenticatedCallback: function() {
@@ -148,7 +156,6 @@ MainView {
 
     Component {
         id: homePageComponent
-
         HomePage {
             pythonBridge: python
             mainView: root
@@ -158,7 +165,6 @@ MainView {
 
     Component {
         id: albumPageComponent
-
         AlbumPage {
             pythonBridge: python
             playback: engine
@@ -168,7 +174,6 @@ MainView {
 
     Component {
         id: playerPageComponent
-
         PlayerPage {
             playback: engine
             pythonBridge: python
@@ -178,19 +183,18 @@ MainView {
     }
 
     Component {
-        id: albumRowComponent
+        id: libraryPageComponent
+        LibraryPage { }
+    }
 
+    Component {
+        id: albumRowComponent
         AlbumRow {
             openAlbumCallback: function(albumId, albumName) {
-                pageLayout.addPageToNextColumn(pageLayout.primaryPage,
-                                               albumPageComponent,
-                                               { albumId: albumId, albumName: albumName })
+                navBar.openAlbum(albumId, albumName)
             }
         }
     }
 
-    Component {
-        id: errorPageComponent
-        ErrorPage { }
-    }
+    Component { id: errorPageComponent; ErrorPage { } }
 }

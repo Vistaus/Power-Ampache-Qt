@@ -15,12 +15,16 @@ Rectangle {
 
     property var playback
     property var openPlayerCallback
+    // Injected from Main.qml; null keeps the bar usable standalone.
+    property var navBar: null
 
     visible: playback.currentSong !== null
     anchors {
         left: parent.left
         right: parent.right
-        bottom: parent.bottom
+        // Sit directly above the nav bar when it is visible, above the
+        // window bottom otherwise.
+        bottom: (navBar !== null && navBar.visible) ? navBar.top : parent.bottom
     }
     height: units.gu(6)
     color: theme.palette.normal.base
