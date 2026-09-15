@@ -66,6 +66,7 @@ Item {
     }
 
     function mountLibraryDefault() {
+        console.log('navBar: mountLibraryDefault wideMode=' + wideMode)
         // The 2-column desktop mount: Library lives in column 1.
         var incubator = pageLayout.addPageToNextColumn(
             pageLayout.primaryPage, libraryPageComponent)
@@ -86,14 +87,8 @@ Item {
     }
 
     function openAlbum(albumId, albumName) {
+        console.log('navBar: openAlbum wideMode=' + wideMode)
         var properties = { albumId: albumId, albumName: albumName }
-        if (wideMode) {
-            // Desktop col-1 mount: the APL back action hides across
-            // columns and the nav bar is hidden, so inject an explicit
-            // close action.
-            properties.desktopMount = true
-            properties.closeCallback = closeAlbum
-        }
         var incubator = pageLayout.addPageToNextColumn(
             pageLayout.primaryPage, albumPageComponent, properties)
         albumIncubator = incubator
@@ -101,6 +96,15 @@ Item {
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     albumPageInstance = incubator.object
+                    // Two-column mount: the APL back action hides across
+                    // columns and the nav bar is hidden, so assign the
+                    // close action directly on the instance (function
+                    // references do not survive creation-properties
+                    // injection).
+                    if (wideMode) {
+                        incubator.object.wideMount = true
+                        incubator.object.closeCallback = closeAlbum
+                    }
                     incubator.object.Component.destruction.connect(function() {
                         albumPageInstance = null
                         scheduleCol1Restore()
@@ -118,13 +122,10 @@ Item {
     }
 
     function openPlayer() {
+        console.log('navBar: openPlayer wideMode=' + wideMode)
         // Guard against stacking a second player page.
         if (playerPageInstance === null) {
             var properties = {}
-            if (wideMode) {
-                properties.desktopMount = true
-                properties.closeCallback = closePlayer
-            }
             var incubator = pageLayout.addPageToNextColumn(
                 pageLayout.primaryPage, playerPageComponent, properties)
             playerIncubator = incubator
@@ -132,6 +133,10 @@ Item {
                 incubator.onStatusChanged = function(status) {
                     if (status === Component.Ready) {
                         playerPageInstance = incubator.object
+                        if (wideMode) {
+                            incubator.object.wideMount = true
+                            incubator.object.closeCallback = closePlayer
+                        }
                         incubator.object.Component.destruction.connect(function() {
                             playerPageInstance = null
                             scheduleCol1Restore()
@@ -150,6 +155,13 @@ Item {
     }
 
     function maybeMountLibrary() {
+        console.log('navBar: maybeMountLibrary wideMode=' + wideMode
+            + ' libraryInstance=' + (libraryPageInstance !== null)
+            + ' libraryIncubator=' + (libraryIncubator !== null)
+            + ' albumInstance=' + (albumPageInstance !== null)
+            + ' albumIncubator=' + (albumIncubator !== null)
+            + ' playerInstance=' + (playerPageInstance !== null)
+            + ' playerIncubator=' + (playerIncubator !== null))
         // Column-1 restore: fire only when column 1 is genuinely empty.
         // The primaryPage check covers the startup window in which
         // wideModeAllowed flips before primaryPageSource is assigned.

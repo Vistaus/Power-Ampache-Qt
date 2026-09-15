@@ -20,10 +20,12 @@ Page {
     property var pythonBridge
     property var playback
     property var formatDuration
-    // Injected only on desktop (2-column) mounts; phone mounts pass
-    // neither, so the header is unchanged there.
+    // Assigned directly by NavBar on the incubated instance in
+    // two-column mode (function references do not survive APL
+    // creation-properties injection); single-column mounts leave
+    // both untouched, so the header is unchanged there.
     property var closeCallback: null
-    property bool desktopMount: false
+    property bool wideMount: false
 
     // Tracks in the order the bridge returns them; this same array
     // is handed to queueManager.playFrom() on track tap.
@@ -37,7 +39,7 @@ Page {
             Action {
                 iconName: 'close'
                 text: i18n.tr('Close')
-                visible: albumPage.closeCallback !== null
+                visible: albumPage.wideMount
                 onTriggered: albumPage.closeCallback()
             }
         ]
