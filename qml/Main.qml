@@ -31,7 +31,6 @@ MainView {
     property bool justAuthenticated: false
     property bool wideModeAllowed: false
     readonly property bool wideMode: pageLayout.width > units.gu(80) && root.wideModeAllowed
-    property var playerPageInstance: null
 
     function formatDuration(totalSeconds) {
         var seconds = Math.max(0, Math.floor(totalSeconds))
@@ -75,24 +74,7 @@ MainView {
         id: miniBar
         playback: engine
         navBar: navBar
-        openPlayerCallback: function() {
-            // Guard against stacking a second player page.
-            if (root.playerPageInstance === null) {
-                var incubator = pageLayout.addPageToNextColumn(
-                    pageLayout.primaryPage, playerPageComponent)
-                if (incubator) {
-                    incubator.onStatusChanged = function(status) {
-                        if (status === Component.Ready) {
-                            root.playerPageInstance = incubator.object
-                            incubator.object.Component.destruction.connect(function() {
-                                root.playerPageInstance = null
-                                navBar.scheduleCol1Restore()
-                            })
-                        }
-                    }
-                }
-            }
-        }
+        openPlayerCallback: function() { navBar.openPlayer() }
     }
 
     NavBar {
@@ -102,7 +84,7 @@ MainView {
         pageLayout: pageLayout
         libraryPageComponent: libraryPageComponent
         albumPageComponent: albumPageComponent
-        playerPageInstance: root.playerPageInstance
+        playerPageComponent: playerPageComponent
         wideMode: root.wideMode
     }
 

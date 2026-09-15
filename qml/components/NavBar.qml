@@ -17,15 +17,17 @@ Item {
     property var pageLayout
     property var libraryPageComponent
     property var albumPageComponent
-    property var playerPageInstance
+    property var playerPageComponent
     property bool wideMode
 
-    // Instance/incubator tracking - same pattern as Main.qml's
-    // playerPageInstance: pages cannot be reused, only Components.
+    // Instance/incubator tracking: pages cannot be reused, only
+    // Components.
     property var libraryPageInstance: null
     property var albumPageInstance: null
+    property var playerPageInstance: null
     property var libraryIncubator: null
     property var albumIncubator: null
+    property var playerIncubator: null
 
     height: units.gu(7)
 
@@ -84,9 +86,16 @@ Item {
     }
 
     function openAlbum(albumId, albumName) {
+        var properties = { albumId: albumId, albumName: albumName }
+        if (wideMode) {
+            // Desktop col-1 mount: the APL back action hides across
+            // columns and the nav bar is hidden, so inject an explicit
+            // close action.
+            properties.desktopMount = true
+            properties.closeCallback = closeAlbum
+        }
         var incubator = pageLayout.addPageToNextColumn(
-            pageLayout.primaryPage, albumPageComponent,
-            { albumId: albumId, albumName: albumName })
+            pageLayout.primaryPage, albumPageComponent, properties)
         albumIncubator = incubator
         if (incubator) {
             incubator.onStatusChanged = function(status) {
@@ -102,6 +111,42 @@ Item {
                 }
             }
         }
+    }
+
+    function closeAlbum() {
+        pageLayout.removePages(albumPageInstance)
+    }
+
+    function openPlayer() {
+        // Guard against stacking a second player page.
+        if (playerPageInstance === null) {
+            var properties = {}
+            if (wideMode) {
+                properties.desktopMount = true
+                properties.closeCallback = closePlayer
+            }
+            var incubator = pageLayout.addPageToNextColumn(
+                pageLayout.primaryPage, playerPageComponent, properties)
+            playerIncubator = incubator
+            if (incubator) {
+                incubator.onStatusChanged = function(status) {
+                    if (status === Component.Ready) {
+                        playerPageInstance = incubator.object
+                        incubator.object.Component.destruction.connect(function() {
+                            playerPageInstance = null
+                            scheduleCol1Restore()
+                        })
+                        playerIncubator = null
+                    } else if (status === Component.Error) {
+                        playerIncubator = null
+                    }
+                }
+            }
+        }
+    }
+
+    function closePlayer() {
+        pageLayout.removePages(playerPageInstance)
     }
 
     function maybeMountLibrary() {

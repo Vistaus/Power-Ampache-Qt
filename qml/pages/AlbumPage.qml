@@ -20,6 +20,10 @@ Page {
     property var pythonBridge
     property var playback
     property var formatDuration
+    // Injected only on desktop (2-column) mounts; phone mounts pass
+    // neither, so the header is unchanged there.
+    property var closeCallback: null
+    property bool desktopMount: false
 
     // Tracks in the order the bridge returns them; this same array
     // is handed to queueManager.playFrom() on track tap.
@@ -28,6 +32,15 @@ Page {
     header: PageHeader {
         id: albumPageHeader
         title: albumPage.albumName
+
+        trailingActionBar.actions: [
+            Action {
+                iconName: 'close'
+                text: i18n.tr('Close')
+                visible: albumPage.closeCallback !== null
+                onTriggered: albumPage.closeCallback()
+            }
+        ]
     }
 
     ListView {
