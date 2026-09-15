@@ -86,6 +86,7 @@ MainView {
         albumPageComponent: albumPageComponent
         playerPageComponent: playerPageComponent
         playlistDetailPageComponent: playlistDetailPageComponent
+        artistPageComponent: artistPageComponent
         wideMode: root.wideMode
     }
 
@@ -145,15 +146,9 @@ MainView {
             albumRowDelegate: albumRowComponent
         }
     }
+    Component { id: albumPageComponent; AlbumPage { pythonBridge: python; playback: engine; formatDuration: root.formatDuration } }
 
-    Component {
-        id: albumPageComponent
-        AlbumPage {
-            pythonBridge: python
-            playback: engine
-            formatDuration: root.formatDuration
-        }
-    }
+    Component { id: artistPageComponent; ArtistPage { pythonBridge: python; openAlbumCallback: navBar.openAlbum } }
 
     Component {
         id: playerPageComponent
@@ -173,6 +168,7 @@ MainView {
             playback: engine
             formatDuration: root.formatDuration
             openAlbumCallback: navBar.openAlbum
+            openArtistCallback: navBar.openArtist
         }
     }
 

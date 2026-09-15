@@ -11,8 +11,10 @@ import "../components"
 // Playlists, Albums (chunked grid), Songs (recently played) and
 // Artists (chunked grid). pythonBridge (the Python element),
 // openPlaylistCallback(playlistId, playlistName), playback (the
-// queue manager), formatDuration(seconds) and
-// openAlbumCallback(albumId, albumName) are injected at the use site.
+// queue manager), formatDuration(seconds),
+// openAlbumCallback(albumId, albumName) and
+// openArtistCallback(artistId, artistName) are injected at the use
+// site.
 Page {
     id: libraryPage
     objectName: 'libraryPage'
@@ -22,6 +24,7 @@ Page {
     property var playback
     property var formatDuration
     property var openAlbumCallback
+    property var openArtistCallback
 
     // The Albums grid model is replaced wholesale on every chunk
     // (the bridge returns the full sorted cache); the Artists grid
@@ -360,8 +363,10 @@ Page {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            // Inert in v1: artist drill-down is a later round, so
-            // there is deliberately no MouseArea here.
+            MouseArea {
+                anchors.fill: parent
+                onClicked: libraryPage.openArtistCallback(modelData.id, modelData.name)
+            }
         }
     }
 

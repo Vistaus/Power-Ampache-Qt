@@ -314,6 +314,41 @@ def getAlbumSongs(albumId):
         return _errorDict(exception)
 
 
+def getArtistAlbums(artistId):
+    "Artist drill-down: fetch the artist's albums (include=albums, persisted), read back from cache, newest first."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'albums': []}
+        client = getClient()
+        # include='albums' persists the artist's albums; the return
+        # value is discarded, the cache DB is the source of truth.
+        client.getArtist(artistId, include='albums')
+        connection = sqlite3.connect(dbPath)
+        try:
+            cursor = connection.execute(
+                'SELECT id, name, artistName, artUrl, year FROM AlbumEntity '
+                'WHERE artistId = ? '
+                'ORDER BY year DESC, name COLLATE NOCASE ASC',
+                (artistId,)
+            )
+            albums = [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'artistName': row[2],
+                    'artUrl': row[3],
+                    'year': row[4],
+                }
+                for row in cursor.fetchall()
+            ]
+            return {'ok': True, 'albums': albums}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def getPlaylistSongs(playlistId):
     "Playlist drill-down: the playlist's tracks in position order, never re-sorted."
     try:
