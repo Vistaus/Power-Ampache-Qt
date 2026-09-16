@@ -212,11 +212,26 @@ Item {
         // exactly like openPlaylist: single-column pushes onto the
         // stack above it, and in two-column mode Library is the
         // rightmost column so the same call stacks there too. The
-        // APL back action applies - no close action and no
-        // instance/incubator tracking.
-        pageLayout.addPageToNextColumn(
+        // APL back action applies - no close action. The instance is
+        // tracked (no birth flags: artist is always a same-column
+        // child of Library) so openAlbumFromArtist can push from it.
+        var incubator = pageLayout.addPageToNextColumn(
             libraryPageInstance, artistPageComponent,
             { artistId: artistId, artistName: artistName })
+        if (incubator) {
+            artistIncubator = incubator
+            incubator.onStatusChanged = function(status) {
+                if (status === Component.Ready) {
+                    artistPageInstance = incubator.object
+                    incubator.object.Component.destruction.connect(function() {
+                        artistPageInstance = null
+                    })
+                    artistIncubator = null
+                } else if (status === Component.Error) {
+                    artistIncubator = null
+                }
+            }
+        }
     }
 
     function openPlayer() {
