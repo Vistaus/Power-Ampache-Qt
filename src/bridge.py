@@ -257,10 +257,13 @@ def getPlaylists():
 
 
 def getAlbumsPage(offset, limit=100):
-    "Library Albums grid: fetch one chunk to grow the cache, then read back every cached album sorted by name; fetched is the server chunk size (drives the next offset), complete still reflects the fetched chunk (drives Load-more visibility)."
+    "Library Albums grid: fetch one chunk to grow the cache, then read back every cached album sorted by name; fetched/complete come from the true server page in client.lastPayload (the getAlbums return value is the full cache read-back, not the page) - fetched drives the next offset, complete drives Load-more visibility."
     try:
         client = getClient()
-        chunk = client.getAlbums(offset=offset, limit=limit)
+        # The return value is the full cache read-back, not the server
+        # page; the true page size comes from lastPayload.
+        client.getAlbums(offset=offset, limit=limit)
+        pageRows = (client.lastPayload or {}).get('album') or []
         connection = sqlite3.connect(getDbPath())
         try:
             cursor = connection.execute(
@@ -277,7 +280,7 @@ def getAlbumsPage(offset, limit=100):
                 }
                 for row in cursor.fetchall()
             ]
-            return {'ok': True, 'albums': albums, 'fetched': len(chunk), 'complete': len(chunk) < limit}
+            return {'ok': True, 'albums': albums, 'fetched': len(pageRows), 'complete': len(pageRows) < limit}
         finally:
             connection.close()
     except Exception as exception:
@@ -285,11 +288,20 @@ def getAlbumsPage(offset, limit=100):
 
 
 def getArtistsPage(offset, limit=100):
-    "Library Artists grid: one chunk per call, complete=True when no more chunks."
+    "Library Artists grid, album artists only: fetch one chunk (albumArtist=1) to grow the cache, then return the full cache (the getArtists return value, ordered by searchName) filtered to albumCount > 0 - albumCount is the server-reported total, so this also hides song-artists persisted by older non-filtered sessions. fetched/complete come from the true server page in client.lastPayload, same pattern as getAlbumsPage."
     try:
         client = getClient()
-        artists = client.getArtists(offset=offset, limit=limit)
-        return {'ok': True, 'artists': [_artistDict(artist) for artist in artists], 'complete': len(artists) < limit}
+        artists = client.getArtists(albumArtist=1, offset=offset, limit=limit)
+        # The return value is the full cache read-back, not the server
+        # page; the true page size comes from lastPayload.
+        pageRows = (client.lastPayload or {}).get('artist') or []
+        albumArtists = [artist for artist in artists if artist.albumCount > 0]
+        return {
+            'ok': True,
+            'artists': [_artistDict(artist) for artist in albumArtists],
+            'fetched': len(pageRows),
+            'complete': len(pageRows) < limit,
+        }
     except Exception as exception:
         return _errorDict(exception)
 

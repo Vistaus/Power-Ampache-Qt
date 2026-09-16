@@ -26,10 +26,9 @@ Page {
     property var openAlbumCallback
     property var openArtistCallback
 
-    // The Albums grid model is replaced wholesale on every chunk
-    // (the bridge returns the full sorted cache); the Artists grid
-    // grows chunk by chunk; recentSongs is replaced wholesale on
-    // every Songs selection.
+    // The Albums and Artists grid models are both replaced wholesale
+    // on every chunk (the bridge returns the full sorted cache);
+    // recentSongs is replaced wholesale on every Songs selection.
     property var albums: []
     property var artists: []
     property var recentSongs: []
@@ -78,12 +77,12 @@ Page {
         pythonBridge.call('bridge.getArtistsPage', [libraryPage.artistsOffset, 100], function(result) {
             libraryPage.artistsFetching = false
             if (result && result.ok) {
-                libraryPage.artists = libraryPage.artists.concat(result.artists)
+                libraryPage.artists = result.artists
                 libraryPage.artistsComplete = result.complete
-                libraryPage.artistsOffset += result.artists.length
+                libraryPage.artistsOffset += result.fetched   // server page size, not the cache size - the cache read-back is cumulative
                 libraryPage.artistsLoaded = true
                 console.log('libraryPage: artists chunk offset=' + libraryPage.artistsOffset
-                            + ' rows=' + result.artists.length + ' complete=' + result.complete)
+                            + ' rows=' + result.fetched + ' complete=' + result.complete)
             }
         })
     }
