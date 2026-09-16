@@ -30,6 +30,8 @@ Item {
     property var libraryIncubator: null
     property var albumIncubator: null
     property var playerIncubator: null
+    property var artistPageInstance: null
+    property var artistIncubator: null
     // Retry budget for rejected column-1 Library mounts (startup race
     // against APL primary-page registration).
     property int libraryMountRetries: 0
@@ -120,22 +122,35 @@ Item {
     }
 
     function openAlbum(albumId, albumName) {
-        console.log('navBar: openAlbum wideMode=' + wideMode)
-        var properties = { albumId: albumId, albumName: albumName }
+        // Thin wrapper: Home-row taps and the migrationTimer reopen
+        // mount cross-column from the primary page (X in wide mode).
+        openAlbumFromSource(pageLayout.primaryPage, albumId, albumName, true)
+    }
+
+    // Shared album push. sourcePage is the page the album stacks on:
+    // the primary page for cross-column mounts (Home rows, migration
+    // reopen), or the calling page for same-column child pushes
+    // (Library/Artist drill-down: no X, the APL auto-back action
+    // returns to the caller).
+    function openAlbumFromSource(sourcePage, albumId, albumName, crossColumn) {
+        console.log('navBar: openAlbumFromSource wideMode=' + wideMode
+            + ' crossColumn=' + crossColumn)
         var incubator = pageLayout.addPageToNextColumn(
-            pageLayout.primaryPage, albumPageComponent, properties)
+            sourcePage, albumPageComponent,
+            { albumId: albumId, albumName: albumName })
         if (incubator) {
             albumIncubator = incubator
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     albumPageInstance = incubator.object
                     albumBirthWide = wideMode
-                    // Two-column mount: the APL back action hides across
-                    // columns and the nav bar is hidden, so assign the
-                    // close action directly on the instance (function
-                    // references do not survive creation-properties
-                    // injection).
-                    if (wideMode) {
+                    // Cross-column two-column mount only: the APL back
+                    // action hides across columns and the nav bar is
+                    // hidden, so assign the close action directly on
+                    // the instance (function references do not survive
+                    // creation-properties injection). Same-column
+                    // child pushes get the APL auto-back action.
+                    if (crossColumn && wideMode) {
                         incubator.object.wideMount = true
                         incubator.object.closeCallback = closeAlbum
                     }
@@ -154,6 +169,29 @@ Item {
 
     function closeAlbum() {
         pageLayout.removePages(albumPageInstance)
+    }
+
+    // Library-page album tap: same-column child push from the Library
+    // instance when it exists (no X in wide mode; APL auto-back
+    // returns to the Library). Falls back to the cross-column mount
+    // when the Library is not mounted.
+    function openAlbumFromLibrary(albumId, albumName) {
+        if (libraryPageInstance !== null) {
+            openAlbumFromSource(libraryPageInstance, albumId, albumName, false)
+        } else {
+            openAlbum(albumId, albumName)
+        }
+    }
+
+    // Artist-page album tap: same-column child push from the Artist
+    // instance when it exists; otherwise resolve through the Library
+    // path (which itself falls back to the cross-column mount).
+    function openAlbumFromArtist(albumId, albumName) {
+        if (artistPageInstance !== null) {
+            openAlbumFromSource(artistPageInstance, albumId, albumName, false)
+        } else {
+            openAlbumFromLibrary(albumId, albumName)
+        }
     }
 
     function openPlaylist(playlistId, playlistName) {

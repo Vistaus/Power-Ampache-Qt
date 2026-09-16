@@ -148,7 +148,7 @@ MainView {
     }
     Component { id: albumPageComponent; AlbumPage { pythonBridge: python; playback: engine; formatDuration: root.formatDuration } }
 
-    Component { id: artistPageComponent; ArtistPage { pythonBridge: python; openAlbumCallback: navBar.openAlbum } }
+    Component { id: artistPageComponent; ArtistPage { pythonBridge: python; openAlbumCallback: navBar.openAlbumFromArtist } }
 
     Component {
         id: playerPageComponent
@@ -167,7 +167,7 @@ MainView {
             openPlaylistCallback: navBar.openPlaylist
             playback: engine
             formatDuration: root.formatDuration
-            openAlbumCallback: navBar.openAlbum
+            openAlbumCallback: navBar.openAlbumFromLibrary
             openArtistCallback: navBar.openArtist
         }
     }
