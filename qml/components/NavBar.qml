@@ -32,6 +32,8 @@ Item {
     property var playerIncubator: null
     property var artistPageInstance: null
     property var artistIncubator: null
+    property var playlistDetailPageInstance: null
+    property var playlistDetailIncubator: null
     // Retry budget for rejected column-1 Library mounts (startup race
     // against APL primary-page registration).
     property int libraryMountRetries: 0
@@ -210,10 +212,26 @@ Item {
         // single-column pushes onto the stack above it, and in
         // two-column mode Library is the rightmost column so the
         // same call stacks there too. The APL back action applies -
-        // no close action and no instance/incubator tracking.
-        pageLayout.addPageToNextColumn(
+        // no close action. The instance is tracked (no birth flags)
+        // so currentPageTop() can source single-column player pushes
+        // from it.
+        var incubator = pageLayout.addPageToNextColumn(
             libraryPageInstance, playlistDetailPageComponent,
             { playlistId: playlistId, playlistName: playlistName })
+        if (incubator) {
+            playlistDetailIncubator = incubator
+            incubator.onStatusChanged = function(status) {
+                if (status === Component.Ready) {
+                    playlistDetailPageInstance = incubator.object
+                    incubator.object.Component.destruction.connect(function() {
+                        playlistDetailPageInstance = null
+                    })
+                    playlistDetailIncubator = null
+                } else if (status === Component.Error) {
+                    playlistDetailIncubator = null
+                }
+            }
+        }
     }
 
     function openArtist(artistId, artistName) {
@@ -244,13 +262,35 @@ Item {
         }
     }
 
+    // The active page among the ones NavBar tracks (Page.active is
+    // true only for the visible top of a column; stale chopped
+    // instances are inactive and get skipped); the primary page when
+    // none is active. Single-column player pushes source from here so
+    // the player stacks on the current position (APL back returns
+    // there) instead of becoming a sibling branch of Home.
+    function currentPageTop() {
+        if (albumPageInstance !== null && albumPageInstance.active) return albumPageInstance
+        if (playlistDetailPageInstance !== null && playlistDetailPageInstance.active) return playlistDetailPageInstance
+        if (artistPageInstance !== null && artistPageInstance.active) return artistPageInstance
+        if (libraryPageInstance !== null && libraryPageInstance.active) return libraryPageInstance
+        return pageLayout.primaryPage
+    }
+
     function openPlayer() {
         console.log('navBar: openPlayer wideMode=' + wideMode)
-        // Guard against stacking a second player page.
-        if (playerPageInstance === null) {
+        // Guard against stacking a second player page; the
+        // playerIncubator check closes the double-tap window while a
+        // push is still incubating. Wide mode pushes from the primary
+        // page (wideMount X close, unchanged). Single-column pushes
+        // from currentPageTop() so the player stacks as a same-column
+        // child of the current stack top: the APL back button appears
+        // and returns the user there, instead of the player becoming
+        // a sibling branch of Home with no back button.
+        if (playerPageInstance === null && playerIncubator === null) {
             var properties = {}
+            var sourcePage = wideMode ? pageLayout.primaryPage : currentPageTop()
             var incubator = pageLayout.addPageToNextColumn(
-                pageLayout.primaryPage, playerPageComponent, properties)
+                sourcePage, playerPageComponent, properties)
             if (incubator) {
                 playerIncubator = incubator
                 incubator.onStatusChanged = function(status) {
