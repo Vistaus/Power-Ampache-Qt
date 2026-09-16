@@ -162,7 +162,7 @@ Page {
             anchors {
                 left: parent.left
                 leftMargin: units.gu(2)
-                right: searchClearIcon.left
+                right: searchCloseIcon.left
                 rightMargin: units.gu(1)
                 verticalCenter: parent.verticalCenter
             }
@@ -178,24 +178,6 @@ Page {
                     searchDebounce.stop()
                     libraryPage.searchResults = []
                 }
-            }
-        }
-
-        Icon {
-            id: searchClearIcon
-            anchors {
-                right: searchCloseIcon.left
-                rightMargin: units.gu(1)
-                verticalCenter: parent.verticalCenter
-            }
-            width: units.gu(3)
-            height: width
-            name: 'edit-clear'
-            visible: searchField.text.length > 0
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: searchField.text = ''
             }
         }
 
@@ -255,7 +237,8 @@ Page {
         }
         visible: libraryHeader.sections.selectedIndex === 0
         clip: true
-        model: libraryPage.searchActive ? libraryPage.searchResults : libraryPage.playlists
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 0)
+               ? libraryPage.searchResults : libraryPage.playlists
 
         delegate: Item {
             id: playlistRow
@@ -347,7 +330,8 @@ Page {
         clip: true
         cellWidth: parent.width / 3
         cellHeight: cellWidth * 14 / 11
-        model: libraryPage.searchActive ? libraryPage.searchResults : libraryPage.albums
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 1)
+               ? libraryPage.searchResults : libraryPage.albums
 
         delegate: Item {
             width: albumGridView.cellWidth
@@ -440,7 +424,8 @@ Page {
         }
         visible: libraryHeader.sections.selectedIndex === 2
         clip: true
-        model: libraryPage.searchActive ? libraryPage.searchResults : libraryPage.recentSongs
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 2)
+               ? libraryPage.searchResults : libraryPage.recentSongs
 
         delegate: TrackDelegate {
             width: recentSongsListView.width
@@ -473,7 +458,8 @@ Page {
         clip: true
         cellWidth: parent.width / 4
         cellHeight: cellWidth * 16 / 11
-        model: libraryPage.searchActive ? libraryPage.searchResults : libraryPage.artists
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 3)
+               ? libraryPage.searchResults : libraryPage.artists
 
         delegate: Item {
             width: artistGridView.cellWidth
