@@ -58,7 +58,17 @@ Item {
 
     function libraryTapped() {
         // Jump to a fresh Library root; the old stack above it is
-        // discarded.
+        // discarded. If the player is the visible top page it is
+        // removed FIRST (see below) so the Library push does not
+        // bury it alive.
+        if (playerPageInstance !== null && playerPageInstance.active) {
+            // The player is the visible top page: remove it first so it
+            // is destroyed properly instead of being buried alive under
+            // the Library push (buried pages are never destroyed, which
+            // would strand playerPageInstance and kill the mini-bar
+            // reopen path).
+            pageLayout.removePages(playerPageInstance)
+        }
         if (libraryPageInstance === null) {
             openLibrary()
         } else {
