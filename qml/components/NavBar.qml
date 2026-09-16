@@ -280,15 +280,22 @@ Item {
         console.log('navBar: openPlayer wideMode=' + wideMode)
         // Guard against stacking a second player page; the
         // playerIncubator check closes the double-tap window while a
-        // push is still incubating. Wide mode pushes from the primary
-        // page (wideMount X close, unchanged). Single-column pushes
-        // from currentPageTop() so the player stacks as a same-column
+        // push is still incubating. BOTH modes source the push from
+        // currentPageTop() so the player stacks as a same-column
         // child of the current stack top: the APL back button appears
         // and returns the user there, instead of the player becoming
-        // a sibling branch of Home with no back button.
+        // a sibling branch of Home with no back button. On desktop
+        // Page.active is true for the top of EACH column, so
+        // currentPageTop() returns the active column-1 browse page
+        // when one exists and addPageToNextColumn clamps to that
+        // rightmost column - the player stacks on top of the browse
+        // stack without pruning it. The wideMount X close applies
+        // only to genuine cross-column mounts (sourcePage ===
+        // primaryPage, i.e. column 1 was empty); same-column stacks
+        // get the APL back action instead.
         if (playerPageInstance === null && playerIncubator === null) {
             var properties = {}
-            var sourcePage = wideMode ? pageLayout.primaryPage : currentPageTop()
+            var sourcePage = currentPageTop()
             var incubator = pageLayout.addPageToNextColumn(
                 sourcePage, playerPageComponent, properties)
             if (incubator) {
@@ -297,7 +304,7 @@ Item {
                     if (status === Component.Ready) {
                         playerPageInstance = incubator.object
                         playerBirthWide = wideMode
-                        if (wideMode) {
+                        if (wideMode && sourcePage === pageLayout.primaryPage) {
                             incubator.object.wideMount = true
                             incubator.object.closeCallback = closePlayer
                         }
