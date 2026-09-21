@@ -216,7 +216,7 @@ Item {
             audioEngine: overlayRoot.audioEngine
             formatDuration: overlayRoot.formatDuration
             anchors {
-                top: grabberStrip.bottom
+                top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
@@ -229,7 +229,7 @@ Item {
             id: queuePanel
             playback: overlayRoot.playback
             anchors {
-                top: grabberStrip.bottom
+                top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
@@ -241,7 +241,7 @@ Item {
         LyricsPanel {
             id: lyricsPanel
             anchors {
-                top: grabberStrip.bottom
+                top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
@@ -249,19 +249,21 @@ Item {
             visible: overlayHeader.sections.selectedIndex === 2
         }
 
-        // Grabber strip at the TOP of the sheet, directly under the
-        // header: the finger is already there, drag down dismisses.
-        // Tap = collapse. Slim - the pill carries the affordance.
+        // Grabber: a transparent strip at the very top edge of the
+        // sheet, pill only (no background). It overlays the header's
+        // non-interactive title row; the sections control at the header's
+        // bottom stays fully tappable. Tap = collapse, drag down =
+        // dismiss.
         Rectangle {
             id: grabberStrip
             objectName: 'playerOverlayGrabber'
             anchors {
                 left: parent.left
                 right: parent.right
-                top: overlayHeader.bottom
+                top: parent.top
             }
-            height: units.gu(3)
-            color: theme.palette.normal.base
+            height: units.gu(4)
+            color: 'transparent'
 
             // The classic bottom-sheet pill.
             Rectangle {
