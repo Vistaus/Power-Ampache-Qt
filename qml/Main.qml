@@ -74,7 +74,7 @@ MainView {
         id: miniBar
         playback: engine
         navBar: navBar
-        openPlayerCallback: function() { navBar.openPlayer() }
+        openPlayerCallback: function() { playerOverlaySpike.openPlayer() }
     }
 
     NavBar {
@@ -88,6 +88,12 @@ MainView {
         playlistDetailPageComponent: playlistDetailPageComponent
         artistPageComponent: artistPageComponent
         wideMode: root.wideMode
+    }
+
+    PlayerOverlaySpike {
+        id: playerOverlaySpike
+        navBar: navBar
+        enabled: root.wideModeAllowed && !root.wideMode
     }
 
     Python {
