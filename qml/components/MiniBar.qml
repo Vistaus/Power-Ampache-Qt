@@ -57,24 +57,6 @@ Rectangle {
         }
     }
 
-    // Grip affordance: the pull-up pill. A plain Rectangle, not an
-    // Icon - three icon families computed but never rendered at
-    // runtime ('up'/'down', 'go-up'/'go-down', 'toolkit_chevron-*'),
-    // while Rectangles always render. Mirrors the sheet's grabber
-    // pill so both affordances look like the same gesture.
-    Rectangle {
-        anchors {
-            top: parent.top
-            topMargin: units.gu(0.5)
-            horizontalCenter: parent.horizontalCenter
-        }
-        width: units.gu(8)
-        height: units.gu(0.8)
-        radius: height / 2
-        color: theme.palette.normal.baseText
-        opacity: 0.6
-    }
-
     // Tap target + drag handle: everything left of the controls.
     // Tap = openPlayerCallback (overlay toggle in single-column
     // mode, page player in wide mode). Drag = the panel follows the

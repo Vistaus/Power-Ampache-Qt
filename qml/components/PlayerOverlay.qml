@@ -216,12 +216,10 @@ Item {
             audioEngine: overlayRoot.audioEngine
             formatDuration: overlayRoot.formatDuration
             anchors {
-                top: overlayHeader.bottom
+                top: grabberStrip.bottom
                 left: parent.left
                 right: parent.right
-                // The sheet covers the bars while expanded; content
-                // stops above the grabber strip.
-                bottom: grabberStrip.top
+                bottom: parent.bottom
             }
             visible: overlayHeader.sections.selectedIndex === 0
         }
@@ -231,12 +229,10 @@ Item {
             id: queuePanel
             playback: overlayRoot.playback
             anchors {
-                top: overlayHeader.bottom
+                top: grabberStrip.bottom
                 left: parent.left
                 right: parent.right
-                // The sheet covers the bars while expanded; content
-                // stops above the grabber strip.
-                bottom: grabberStrip.top
+                bottom: parent.bottom
             }
             visible: overlayHeader.sections.selectedIndex === 1
         }
@@ -245,29 +241,26 @@ Item {
         LyricsPanel {
             id: lyricsPanel
             anchors {
-                top: overlayHeader.bottom
+                top: grabberStrip.bottom
                 left: parent.left
                 right: parent.right
-                // The sheet covers the bars while expanded; content
-                // stops above the grabber strip.
-                bottom: grabberStrip.top
+                bottom: parent.bottom
             }
             visible: overlayHeader.sections.selectedIndex === 2
         }
 
-        // Grabber strip: the sheet's own close affordance, visible only
-        // while expanded (the sheet covers the bars then). Tap = collapse;
-        // drag = the sheet follows the finger through the same
-        // direction-aware release machinery as the mini bar handle.
+        // Grabber strip at the TOP of the sheet, directly under the
+        // header: the finger is already there, drag down dismisses.
+        // Tap = collapse. Slim - the pill carries the affordance.
         Rectangle {
             id: grabberStrip
             objectName: 'playerOverlayGrabber'
             anchors {
                 left: parent.left
                 right: parent.right
-                bottom: parent.bottom
+                top: overlayHeader.bottom
             }
-            height: units.gu(5)
+            height: units.gu(3)
             color: theme.palette.normal.base
 
             // The classic bottom-sheet pill.
