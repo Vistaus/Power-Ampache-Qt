@@ -44,6 +44,16 @@ Page {
     // Playlist dicts in the order the bridge returns them.
     property var playlists: []
 
+    // Search state. searchActive derives from the mode plus the
+    // minimum query length; browse models are never overwritten,
+    // the views bind through a ternary on searchActive.
+    property bool searchMode: false
+    property string searchQuery: ''
+    property var searchResults: []
+    property bool searchRunning: false
+    property int searchGeneration: 0
+    readonly property bool searchActive: searchMode && searchQuery.length >= 2
+
     function loadAlbumsChunk() {
         if (albumsFetching) return
         albumsFetching = true
@@ -87,16 +97,123 @@ Page {
         })
     }
 
+    function toggleSearch() {
+        searchMode = !searchMode
+        // Invalidate any in-flight search so a late response cannot
+        // write into the cleared state.
+        searchGeneration += 1
+        searchRunning = false
+        if (!searchMode) {
+            // Clearing the field runs onTextChanged, which clears
+            // searchQuery and searchResults and stops the debounce.
+            searchField.text = ''
+        }
+    }
+
+    function runSearch() {
+        if (!searchMode || searchQuery.length < 2) return
+        libraryPage.searchGeneration += 1
+        var generation = libraryPage.searchGeneration
+        searchRunning = true
+        searchResults = []   // clear before the call - no stale flash
+        var sectionIndex = libraryHeader.sections.selectedIndex
+        var methods = ['bridge.searchPlaylists', 'bridge.searchAlbums',
+                       'bridge.searchSongs', 'bridge.searchArtists']
+        var resultKeys = ['playlists', 'albums', 'songs', 'artists']
+        pythonBridge.call(methods[sectionIndex], [libraryPage.searchQuery], function(result) {
+            if (generation !== libraryPage.searchGeneration) return   // stale response - a newer search owns the field
+            libraryPage.searchRunning = false
+            if (result && result.ok) {
+                libraryPage.searchResults = result[resultKeys[sectionIndex]] || []
+                console.log('libraryPage: search section=' + sectionIndex
+                            + ' rows=' + libraryPage.searchResults.length)
+            }
+            // On failure the (empty) result set stands; session 3
+            // owns error surfacing.
+        })
+    }
+
     header: PageHeader {
         id: libraryHeader
         title: i18n.tr('Library')
         // sections is read-only: the model is assigned imperatively
         // in Component.onCompleted, never inline here.
+        trailingActionBar.actions: Action {
+            iconName: 'search'
+            onTriggered: libraryPage.toggleSearch()
+        }
+    }
+
+    // Search row: one field, contextual to the active section. The
+    // debounce keeps every keystroke from firing a server request.
+    Item {
+        id: searchRow
+        anchors {
+            top: libraryHeader.bottom
+            left: parent.left
+            right: parent.right
+        }
+        height: libraryPage.searchMode ? units.gu(7) : 0
+        visible: libraryPage.searchMode
+        clip: true
+
+        TextField {
+            id: searchField
+            anchors {
+                left: parent.left
+                leftMargin: units.gu(2)
+                right: searchCloseIcon.left
+                rightMargin: units.gu(1)
+                verticalCenter: parent.verticalCenter
+            }
+            placeholderText: i18n.tr('Search')
+            inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+            onTextChanged: {
+                libraryPage.searchQuery = text.trim()
+                if (libraryPage.searchQuery.length >= 2) {
+                    searchDebounce.restart()
+                } else {
+                    // Below the minimum: stop any pending search, the
+                    // browse view is restored instantly.
+                    searchDebounce.stop()
+                    libraryPage.searchResults = []
+                }
+            }
+        }
+
+        Icon {
+            id: searchCloseIcon
+            anchors {
+                right: parent.right
+                rightMargin: units.gu(2)
+                verticalCenter: parent.verticalCenter
+            }
+            width: units.gu(3)
+            height: width
+            name: 'close'
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: libraryPage.toggleSearch()
+            }
+        }
+    }
+
+    Timer {
+        id: searchDebounce
+        interval: 450
+        // repeat defaults to false: one shot per keystroke pause.
+        onTriggered: libraryPage.runSearch()
     }
 
     Connections {
         target: libraryHeader.sections
         onSelectedIndexChanged: {
+            // Hopping sections re-searches the same query; the field
+            // and its text stay.
+            if (libraryPage.searchActive) {
+                libraryPage.runSearch()
+            }
             // Songs refetches every selection (the recent list
             // changes as you play); Albums/Artists fetch chunk 0
             // on first selection only.
@@ -113,14 +230,15 @@ Page {
     ListView {
         id: playlistListView
         anchors {
-            top: libraryHeader.bottom
+            top: searchRow.bottom
             left: parent.left
             right: parent.right
             bottom: parent.bottom
         }
         visible: libraryHeader.sections.selectedIndex === 0
         clip: true
-        model: libraryPage.playlists
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 0)
+               ? libraryPage.searchResults : libraryPage.playlists
 
         delegate: Item {
             id: playlistRow
@@ -192,10 +310,18 @@ Page {
         }
     }
 
+    Label {
+        anchors.centerIn: playlistListView
+        text: i18n.tr('No results')
+        visible: libraryHeader.sections.selectedIndex === 0
+                 && libraryPage.searchActive && !libraryPage.searchRunning
+                 && libraryPage.searchResults.length === 0
+    }
+
     GridView {
         id: albumGridView
         anchors {
-            top: libraryHeader.bottom
+            top: searchRow.bottom
             left: parent.left
             right: parent.right
             bottom: loadMoreAlbumsButton.top
@@ -204,7 +330,8 @@ Page {
         clip: true
         cellWidth: parent.width / 3
         cellHeight: cellWidth * 14 / 11
-        model: libraryPage.albums
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 1)
+               ? libraryPage.searchResults : libraryPage.albums
 
         delegate: Item {
             width: albumGridView.cellWidth
@@ -252,6 +379,14 @@ Page {
         }
     }
 
+    Label {
+        anchors.centerIn: albumGridView
+        text: i18n.tr('No results')
+        visible: libraryHeader.sections.selectedIndex === 1
+                 && libraryPage.searchActive && !libraryPage.searchRunning
+                 && libraryPage.searchResults.length === 0
+    }
+
     Item {
         id: loadMoreAlbumsButton
         anchors {
@@ -262,8 +397,8 @@ Page {
             rightMargin: units.gu(2)
             bottomMargin: units.gu(1)
         }
-        height: units.gu(5)
-        visible: libraryHeader.sections.selectedIndex === 1 && !libraryPage.albumsComplete
+        height: visible ? units.gu(5) : 0
+        visible: libraryHeader.sections.selectedIndex === 1 && !libraryPage.albumsComplete && !libraryPage.searchActive
 
         Label {
             anchors.centerIn: parent
@@ -282,29 +417,39 @@ Page {
     ListView {
         id: recentSongsListView
         anchors {
-            top: libraryHeader.bottom
+            top: searchRow.bottom
             left: parent.left
             right: parent.right
             bottom: parent.bottom
         }
         visible: libraryHeader.sections.selectedIndex === 2
         clip: true
-        model: libraryPage.recentSongs
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 2)
+               ? libraryPage.searchResults : libraryPage.recentSongs
 
         delegate: TrackDelegate {
             width: recentSongsListView.width
             playTrackCallback: function(rowIndex) {
                 // v1 semantics: the tapped song plays as a queue of one.
-                playback.playFrom([libraryPage.recentSongs[rowIndex]], 0)
+                var songs = libraryPage.searchActive ? libraryPage.searchResults : libraryPage.recentSongs
+                playback.playFrom([songs[rowIndex]], 0)
             }
             formatDuration: libraryPage.formatDuration
         }
     }
 
+    Label {
+        anchors.centerIn: recentSongsListView
+        text: i18n.tr('No results')
+        visible: libraryHeader.sections.selectedIndex === 2
+                 && libraryPage.searchActive && !libraryPage.searchRunning
+                 && libraryPage.searchResults.length === 0
+    }
+
     GridView {
         id: artistGridView
         anchors {
-            top: libraryHeader.bottom
+            top: searchRow.bottom
             left: parent.left
             right: parent.right
             bottom: loadMoreArtistsButton.top
@@ -313,7 +458,8 @@ Page {
         clip: true
         cellWidth: parent.width / 4
         cellHeight: cellWidth * 16 / 11
-        model: libraryPage.artists
+        model: (libraryPage.searchActive && libraryHeader.sections.selectedIndex === 3)
+               ? libraryPage.searchResults : libraryPage.artists
 
         delegate: Item {
             width: artistGridView.cellWidth
@@ -377,6 +523,14 @@ Page {
         }
     }
 
+    Label {
+        anchors.centerIn: artistGridView
+        text: i18n.tr('No results')
+        visible: libraryHeader.sections.selectedIndex === 3
+                 && libraryPage.searchActive && !libraryPage.searchRunning
+                 && libraryPage.searchResults.length === 0
+    }
+
     Item {
         id: loadMoreArtistsButton
         anchors {
@@ -387,8 +541,8 @@ Page {
             rightMargin: units.gu(2)
             bottomMargin: units.gu(1)
         }
-        height: units.gu(5)
-        visible: libraryHeader.sections.selectedIndex === 3 && !libraryPage.artistsComplete
+        height: visible ? units.gu(5) : 0
+        visible: libraryHeader.sections.selectedIndex === 3 && !libraryPage.artistsComplete && !libraryPage.searchActive
 
         Label {
             anchors.centerIn: parent

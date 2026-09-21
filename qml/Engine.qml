@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import QtMultimedia 5.6
+import "components"
 
 // The playback engine in ONE object. Architecture follows the
 // ut-sonic-player pattern (store-shipped, device-tested):
@@ -55,6 +56,15 @@ Item {
     // queue keeps original album order; the hub playlist is the
     // rotated view of it.
     property int queueStart: 0
+    // Stream URLs PARALLEL to queue (same order, same indices),
+    // captured at commitQueue. QueueShuffler rebuilds the hub rest
+    // from these by id lookup: no re-fetch, so the server never
+    // records a second play stat for a shuffle toggle.
+    property var queueUrls: []
+    // The queue exactly as handed to playFrom, BEFORE eager shuffle.
+    // QueueShuffler's OFF direction restores this order; empty for
+    // queues committed before this property existed (restore skips).
+    property var originalQueue: []
     readonly property var currentSong: (playerIndex >= 0 && playerIndex < queue.length) ? queue[playerIndex] : null
     // Imperative "is playing" truth. NEVER bind this to
     // audio.playbackState: a late StoppedState echo from the old
@@ -79,8 +89,10 @@ Item {
     // --- Stop-then-commit state ------------------------------------
     // The next queue awaiting a safe commit point:
     // {'songs': effective queue, 'start': tapped index, 'urls':
-    // rotated stream URLs}. Written by playFrom's bridge callback,
-    // consumed by commitQueue() exactly once.
+    // rotated stream URLs, 'urlsFull': un-rotated URLs parallel to
+    // songs, 'original': the pre-eager-shuffle playFrom list}.
+    // Written by playFrom's bridge callback, consumed by
+    // commitQueue() exactly once.
     property var pendingCommit: null
     // State gate pairing one stop() with one StoppedState
     // confirmation. StoppedState echoes from our own stop/clear
@@ -156,7 +168,8 @@ Item {
             // at commit. queue/playerIndex math is unchanged - with
             // the tail, (queueStart + hubIndex) % queue.length never
             // wraps.
-            pendingCommit = {'songs': eff, 'start': start, 'urls': rotated}
+            pendingCommit = {'songs': eff, 'start': start, 'urls': rotated,
+                             'urlsFull': result.urls, 'original': list}
             requestCommit()
         })
     }
@@ -204,6 +217,8 @@ Item {
         }
         engine.lastCommitMs = Date.now()
         queue = pending.songs
+        queueUrls = pending.urlsFull
+        originalQueue = pending.original
         queueStart = pending.start
         lastSampledPos = 0
         console.log('engine: commit rebuilding hub playlist count=' + pending.urls.length)
@@ -238,7 +253,7 @@ Item {
     }
 
     function toggleShuffle() {
-        shuffle = !shuffle
+        queueShuffler.toggle()
     }
 
     function cycleRepeat() {
@@ -484,6 +499,16 @@ Item {
         onActiveChanged: {
             if (Qt.application.active) engine.warmUpMediaHub()
         }
+    }
+
+    // Mid-queue shuffle surgery (Sonic shuffleQueue/resetQueue
+    // pattern). Passive: no timers, no Connections; only toggle()
+    // ever runs. The engine hands over its own state + the hub
+    // playlist directly - no Main.qml wiring.
+    QueueShuffler {
+        id: queueShuffler
+        engine: engine
+        hub: hubPlaylist
     }
 
     MediaPlayer {

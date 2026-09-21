@@ -24,6 +24,7 @@ from ampachedata import InvalidHandshakeError
 _APP_DIR_NAME = 'powerampache.icefields'
 _DB_FILE_NAME = 'musicdb.db'
 _DEFAULT_LIMIT = 10
+_SEARCH_PAGE_SIZE = 500
 
 _threadLocal = threading.local()
 
@@ -367,6 +368,187 @@ def getPlaylistSongs(playlistId):
         client = getClient()
         songs = client.getSongsFromPlaylist(playlistId)
         return {'ok': True, 'songs': [_songDict(song) for song in songs]}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def searchPlaylists(query):
+    "Library search, Playlists section: the server-side filter is a case-insensitive name substring match (PA2 semantics, verified live 09-16). An empty query returns an empty list with no network call. Self-paginated in 500-row pages with short-page termination: a bare list call would auto-paginate the whole library, lastPayload holds only the latest page, and total_count is unreliable. Write-through persists every fetched page, so searching grows the cache."
+    if not query or not query.strip():
+        return {'ok': True, 'playlists': []}
+    try:
+        client = getClient()
+        matchedIds = set()
+        offset = 0
+        while True:
+            client.getPlaylists(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
+            pageRows = (client.lastPayload or {}).get('playlist') or []
+            for pageRow in pageRows:
+                matchedIds.add(str(pageRow.get('id')))
+            if len(pageRows) < _SEARCH_PAGE_SIZE:
+                break
+            offset += _SEARCH_PAGE_SIZE
+        if not matchedIds:
+            return {'ok': True, 'playlists': []}
+        connection = sqlite3.connect(getDbPath())
+        try:
+            # Same SELECT/ORDER BY as getPlaylists (rating/flag/owned/
+            # smart ordering); the matched-id filter applies on top of
+            # the cache read-back.
+            cursor = connection.execute(
+                'SELECT id, name, owner, items, type, artUrl FROM PlaylistEntity '
+                'ORDER BY preciseRating DESC, rating DESC, flag DESC, '
+                'CASE WHEN owner = (SELECT username FROM CredentialsEntity LIMIT 1) THEN 0 ELSE 1 END, '
+                "CASE WHEN id LIKE 'smart\\_%' ESCAPE '\\' THEN 1 ELSE 0 END, "
+                'rowid ASC'
+            )
+            playlists = [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'owner': row[2],
+                    'items': row[3],
+                    'type': row[4],
+                    'artUrl': row[5],
+                }
+                for row in cursor.fetchall()
+                if str(row[0]) in matchedIds
+            ]
+            return {'ok': True, 'playlists': playlists}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def searchAlbums(query):
+    "Library search, Albums section: the server-side filter is a case-insensitive title substring match (PA2 semantics, verified live 09-16). Same self-paginated shape as searchPlaylists: lastPayload holds only the latest page, total_count is unreliable, and write-through grows the cache with every fetched page."
+    if not query or not query.strip():
+        return {'ok': True, 'albums': []}
+    try:
+        client = getClient()
+        matchedIds = set()
+        offset = 0
+        while True:
+            client.getAlbums(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
+            pageRows = (client.lastPayload or {}).get('album') or []
+            for pageRow in pageRows:
+                matchedIds.add(str(pageRow.get('id')))
+            if len(pageRows) < _SEARCH_PAGE_SIZE:
+                break
+            offset += _SEARCH_PAGE_SIZE
+        if not matchedIds:
+            return {'ok': True, 'albums': []}
+        connection = sqlite3.connect(getDbPath())
+        try:
+            # Same SELECT as getAlbumsPage; the matched-id filter
+            # applies on top of the cache read-back.
+            cursor = connection.execute(
+                'SELECT id, name, artistName, artUrl, year FROM AlbumEntity '
+                'ORDER BY name COLLATE NOCASE ASC'
+            )
+            albums = [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'artistName': row[2],
+                    'artUrl': row[3],
+                    'year': row[4],
+                }
+                for row in cursor.fetchall()
+                if str(row[0]) in matchedIds
+            ]
+            return {'ok': True, 'albums': albums}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def searchSongs(query):
+    "Library search, Songs section: the server-side filter is a case-insensitive TITLE-ONLY substring match - artist names are not matched, accepted behavior, PA2-identical, verified live 09-16. Same self-paginated shape as searchPlaylists: lastPayload holds only the latest page, total_count is unreliable, and write-through grows the cache with every fetched page."
+    if not query or not query.strip():
+        return {'ok': True, 'songs': []}
+    try:
+        client = getClient()
+        matchedIds = set()
+        offset = 0
+        while True:
+            client.getSongs(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
+            pageRows = (client.lastPayload or {}).get('song') or []
+            for pageRow in pageRows:
+                matchedIds.add(str(pageRow.get('id')))
+            if len(pageRows) < _SEARCH_PAGE_SIZE:
+                break
+            offset += _SEARCH_PAGE_SIZE
+        if not matchedIds:
+            return {'ok': True, 'songs': []}
+        connection = sqlite3.connect(getDbPath())
+        try:
+            cursor = connection.execute(
+                'SELECT mediaId, title, trackNumber, artistName, albumId, albumName, time, imageUrl '
+                'FROM SongEntity ORDER BY searchTitle COLLATE NOCASE, mediaId'
+            )
+            songs = [
+                {
+                    'id': row[0],
+                    'title': row[1],
+                    'trackNumber': row[2],
+                    'artistName': row[3],
+                    'albumId': row[4],
+                    'albumName': row[5],
+                    'time': row[6],
+                    'imageUrl': row[7],
+                }
+                for row in cursor.fetchall()
+                if str(row[0]) in matchedIds
+            ]
+            return {'ok': True, 'songs': songs}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def searchArtists(query):
+    "Library search, Artists section: the server-side filter is a case-insensitive name substring match (PA2 semantics, verified live 09-16), album artists only (albumArtist=1, albumCount > 0 - album-artist discipline unchanged). Same self-paginated shape as searchPlaylists: lastPayload holds only the latest page, total_count is unreliable, and write-through grows the cache with every fetched page."
+    if not query or not query.strip():
+        return {'ok': True, 'artists': []}
+    try:
+        client = getClient()
+        matchedIds = set()
+        offset = 0
+        while True:
+            client.getArtists(albumArtist=1, filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
+            pageRows = (client.lastPayload or {}).get('artist') or []
+            for pageRow in pageRows:
+                matchedIds.add(str(pageRow.get('id')))
+            if len(pageRows) < _SEARCH_PAGE_SIZE:
+                break
+            offset += _SEARCH_PAGE_SIZE
+        if not matchedIds:
+            return {'ok': True, 'artists': []}
+        connection = sqlite3.connect(getDbPath())
+        try:
+            cursor = connection.execute(
+                'SELECT id, name, albumCount, songCount, artUrl, flag FROM ArtistEntity '
+                'ORDER BY searchName COLLATE NOCASE, id'
+            )
+            artists = [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'albumCount': row[2],
+                    'songCount': row[3],
+                    'artUrl': row[4],
+                    'flag': row[5],
+                }
+                for row in cursor.fetchall()
+                if str(row[0]) in matchedIds and row[2] > 0
+            ]
+            return {'ok': True, 'artists': artists}
+        finally:
+            connection.close()
     except Exception as exception:
         return _errorDict(exception)
 

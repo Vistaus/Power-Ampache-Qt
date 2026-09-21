@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-16 17:38+0000\n"
+"POT-Creation-Date: 2026-09-17 16:08+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,7 +25,7 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:439 ../qml/pages/LibraryPage.qml:92
+#: ../qml/components/NavBar.qml:439 ../qml/pages/LibraryPage.qml:138
 msgid "Library"
 msgstr ""
 
@@ -70,35 +70,44 @@ msgstr ""
 msgid "Random"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:182
+#: ../qml/pages/LibraryPage.qml:169
+msgid "Search"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:300
 msgid "tracks"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:270 ../qml/pages/LibraryPage.qml:395
+#: ../qml/pages/LibraryPage.qml:315 ../qml/pages/LibraryPage.qml:384
+#: ../qml/pages/LibraryPage.qml:443 ../qml/pages/LibraryPage.qml:528
+msgid "No results"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:405 ../qml/pages/LibraryPage.qml:549
 msgid "Load more"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:366
+#: ../qml/pages/LibraryPage.qml:512
 msgid "albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:367
+#: ../qml/pages/LibraryPage.qml:513
 msgid "songs"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:412
+#: ../qml/pages/LibraryPage.qml:566
 msgid "Playlists"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:413
+#: ../qml/pages/LibraryPage.qml:567
 msgid "Albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:414
+#: ../qml/pages/LibraryPage.qml:568
 msgid "Songs"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:415
+#: ../qml/pages/LibraryPage.qml:569
 msgid "Artists"
 msgstr ""
 
