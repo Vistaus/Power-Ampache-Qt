@@ -41,7 +41,9 @@ Item {
         if (!enabled) {
             return ''
         }
-        return overlayPanel.y < overlayPanel.height * 0.5 ? 'go-down' : 'go-up'
+        // Toolkit-internal icon family (same lookup path the SDK's own
+        // BottomEdgeHint uses), since standard names proved unreliable.
+        return overlayPanel.y < overlayPanel.height * 0.5 ? 'toolkit_chevron-down_2gu' : 'toolkit_chevron-up_2gu'
     }
 
     function open() {
@@ -228,13 +230,9 @@ Item {
                 top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
-                bottom: parent.bottom
-                // Legal anchor (parent); the bar strip is reserved
-                // via margin bindings - anchors cannot cross subtrees.
-                bottomMargin: (overlayRoot.miniBar !== null && overlayRoot.miniBar.visible
-                               ? overlayRoot.miniBar.height : 0)
-                              + (overlayRoot.navBar !== null && overlayRoot.navBar.visible
-                                 ? overlayRoot.navBar.height : 0)
+                // The sheet covers the bars while expanded; content
+                // stops above the grabber strip.
+                bottom: grabberStrip.top
             }
             visible: overlayHeader.sections.selectedIndex === 0
         }
@@ -247,13 +245,9 @@ Item {
                 top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
-                bottom: parent.bottom
-                // Legal anchor (parent); the bar strip is reserved
-                // via margin bindings - anchors cannot cross subtrees.
-                bottomMargin: (overlayRoot.miniBar !== null && overlayRoot.miniBar.visible
-                               ? overlayRoot.miniBar.height : 0)
-                              + (overlayRoot.navBar !== null && overlayRoot.navBar.visible
-                                 ? overlayRoot.navBar.height : 0)
+                // The sheet covers the bars while expanded; content
+                // stops above the grabber strip.
+                bottom: grabberStrip.top
             }
             visible: overlayHeader.sections.selectedIndex === 1
         }
@@ -265,15 +259,78 @@ Item {
                 top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
-                bottom: parent.bottom
-                // Legal anchor (parent); the bar strip is reserved
-                // via margin bindings - anchors cannot cross subtrees.
-                bottomMargin: (overlayRoot.miniBar !== null && overlayRoot.miniBar.visible
-                               ? overlayRoot.miniBar.height : 0)
-                              + (overlayRoot.navBar !== null && overlayRoot.navBar.visible
-                                 ? overlayRoot.navBar.height : 0)
+                // The sheet covers the bars while expanded; content
+                // stops above the grabber strip.
+                bottom: grabberStrip.top
             }
             visible: overlayHeader.sections.selectedIndex === 2
+        }
+
+        // Grabber strip: the sheet's own close affordance, visible only
+        // while expanded (the sheet covers the bars then). Tap = collapse;
+        // drag = the sheet follows the finger through the same
+        // direction-aware release machinery as the mini bar handle.
+        Rectangle {
+            id: grabberStrip
+            objectName: 'playerOverlayGrabber'
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+            height: units.gu(5)
+            color: theme.palette.normal.base
+
+            // The classic bottom-sheet pill.
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                width: units.gu(12)
+                height: units.gu(0.8)
+                radius: height / 2
+                color: theme.palette.normal.baseText
+                opacity: 0.6
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                property real previousY: -1
+                property string dragDirection: 'None'
+                drag {
+                    axis: Drag.YAxis
+                    target: overlayPanel
+                    minimumY: 0
+                    maximumY: overlayRoot.dragMaxY
+                }
+                onPressed: {
+                    console.log('playerOverlay: grabber pressed y=' + mouse.y)
+                    previousY = mouse.y
+                    dragDirection = 'None'
+                    overlayRoot.handlePressed()
+                }
+                onPositionChanged: {
+                    // 2gu sampling (same as the mini bar handle).
+                    if (previousY < 0) {
+                        return
+                    }
+                    var yOffset = previousY - mouse.y
+                    if (Math.abs(yOffset) <= units.gu(2)) {
+                        return
+                    }
+                    previousY = mouse.y
+                    dragDirection = yOffset > 0 ? 'BottomToTop' : 'TopToBottom'
+                }
+                onReleased: {
+                    console.log('playerOverlay: grabber released direction=' + dragDirection)
+                    overlayRoot.handleReleased(dragDirection)
+                    previousY = -1
+                    dragDirection = 'None'
+                }
+                onClicked: {
+                    console.log('playerOverlay: grabber clicked (tap)')
+                    overlayRoot.collapse()
+                }
+            }
         }
     }
 
