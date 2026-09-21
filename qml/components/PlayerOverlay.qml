@@ -35,17 +35,6 @@ Item {
     readonly property alias dragTarget: overlayPanel
     readonly property real dragMaxY: overlayPanel.height
 
-    // Chevron hint for the MiniBar: pull up when closed, drag down
-    // when open. Empty when the overlay is disabled (wide mode).
-    readonly property string chevronIcon: {
-        if (!enabled) {
-            return ''
-        }
-        // Toolkit-internal icon family (same lookup path the SDK's own
-        // BottomEdgeHint uses), since standard names proved unreliable.
-        return overlayPanel.y < overlayPanel.height * 0.5 ? 'toolkit_chevron-down_2gu' : 'toolkit_chevron-up_2gu'
-    }
-
     function open() {
         if (!enabled) {
             return
@@ -72,7 +61,7 @@ Item {
     // in wide mode / login.
     function tapAction() {
         console.log('playerOverlay: tapAction enabled=' + enabled
-            + ' state=' + overlayPanel.state + ' chevron=' + chevronIcon)
+            + ' state=' + overlayPanel.state)
         if (!enabled) {
             if (navBar !== null) {
                 navBar.openPlayer()

@@ -20,7 +20,6 @@ Rectangle {
     // Player overlay handle wiring (single-column mode). null keeps
     // the bar standalone with tap-only behavior.
     property var overlayHandle: null
-    property string chevronIconName: ''
 
     visible: playback.currentSong !== null
     anchors {
@@ -58,19 +57,22 @@ Rectangle {
         }
     }
 
-    // Grip affordance: chevron hinting the pull-up. Injected via
-    // chevronIconName; empty string hides it. No MouseArea of its
-    // own: taps fall through to the bar's drag/tap MouseArea below.
-    Icon {
+    // Grip affordance: the pull-up pill. A plain Rectangle, not an
+    // Icon - three icon families computed but never rendered at
+    // runtime ('up'/'down', 'go-up'/'go-down', 'toolkit_chevron-*'),
+    // while Rectangles always render. Mirrors the sheet's grabber
+    // pill so both affordances look like the same gesture.
+    Rectangle {
         anchors {
             top: parent.top
+            topMargin: units.gu(0.5)
             horizontalCenter: parent.horizontalCenter
         }
-        width: units.gu(2)
-        height: units.gu(1)
-        name: miniBar.chevronIconName
-        visible: miniBar.chevronIconName !== ''
-        opacity: 0.5
+        width: units.gu(8)
+        height: units.gu(0.8)
+        radius: height / 2
+        color: theme.palette.normal.baseText
+        opacity: 0.6
     }
 
     // Tap target + drag handle: everything left of the controls.
