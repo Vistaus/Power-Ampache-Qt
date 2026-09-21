@@ -70,11 +70,24 @@ MainView {
         pythonBridge: python
     }
 
+    PlayerOverlay {
+        id: playerOverlay
+        miniBar: miniBar
+        navBar: navBar
+        playback: engine
+        pythonBridge: python
+        audioEngine: engine.audioElement
+        formatDuration: root.formatDuration
+        enabled: root.wideModeAllowed && !root.wideMode
+    }
+
     MiniBar {
         id: miniBar
         playback: engine
         navBar: navBar
-        openPlayerCallback: function() { playerOverlaySpike.openPlayer() }
+        overlayHandle: playerOverlay
+        chevronIconName: playerOverlay.chevronIcon
+        openPlayerCallback: function() { playerOverlay.tapAction() }
     }
 
     NavBar {
@@ -88,12 +101,6 @@ MainView {
         playlistDetailPageComponent: playlistDetailPageComponent
         artistPageComponent: artistPageComponent
         wideMode: root.wideMode
-    }
-
-    PlayerOverlaySpike {
-        id: playerOverlaySpike
-        navBar: navBar
-        enabled: root.wideModeAllowed && !root.wideMode
     }
 
     Python {
