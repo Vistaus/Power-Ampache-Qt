@@ -486,6 +486,17 @@ Item {
     onWideModeChanged: {
         if (wideMode) {
             migrateToTwoColumns()
+        } else {
+            // Shrink into single-column: APL clamps column-1 wrappers
+            // into column 0, so a wide-born player page can be re-homed
+            // and stay visible on top of the portrait stack. Locked
+            // design: the portrait player is the overlay - remove the
+            // page (proper destroy: removePages on a tree page), the
+            // mini bar reopens it as the overlay. Music never stops.
+            if (playerPageInstance !== null && playerPageInstance.active) {
+                console.log('navBar: shrink with visible player page, removing')
+                pageLayout.removePages(playerPageInstance)
+            }
         }
         maybeMountLibrary()
     }

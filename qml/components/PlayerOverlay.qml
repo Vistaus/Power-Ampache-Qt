@@ -18,6 +18,11 @@ import Lomiri.Components 1.3
 Item {
     id: overlayRoot
     objectName: 'playerOverlay'
+    // Full-screen root: the panel's geometry and the drag range all
+    // derive from this Item's size. Anchored children cannot size
+    // their parent (circular), so without this the Item stays 0x0 and
+    // the overlay can never appear.
+    anchors.fill: parent
 
     property var miniBar
     property var navBar
