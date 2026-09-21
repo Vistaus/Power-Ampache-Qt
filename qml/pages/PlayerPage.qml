@@ -19,10 +19,25 @@ Page {
     property var pythonBridge
     property var audioEngine
     property var formatDuration
+    // Assigned directly by NavBar on the incubated instance in
+    // two-column mode (function references do not survive APL
+    // creation-properties injection); single-column mounts leave
+    // both untouched, so the header is unchanged there.
+    property var closeCallback: null
+    property bool wideMount: false
 
     header: PageHeader {
         id: playerPageHeader
         title: i18n.tr('Now Playing')
+
+        trailingActionBar.actions: [
+            Action {
+                iconName: 'close'
+                text: i18n.tr('Close')
+                visible: playerPage.wideMount
+                onTriggered: playerPage.closeCallback()
+            }
+        ]
 
         // Segmented control drives the three sections below.
         // sections is read-only: populate the model at completion,

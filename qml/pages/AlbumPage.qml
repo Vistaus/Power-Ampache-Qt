@@ -20,6 +20,12 @@ Page {
     property var pythonBridge
     property var playback
     property var formatDuration
+    // Assigned directly by NavBar on the incubated instance in
+    // two-column mode (function references do not survive APL
+    // creation-properties injection); single-column mounts leave
+    // both untouched, so the header is unchanged there.
+    property var closeCallback: null
+    property bool wideMount: false
 
     // Tracks in the order the bridge returns them; this same array
     // is handed to queueManager.playFrom() on track tap.
@@ -28,6 +34,15 @@ Page {
     header: PageHeader {
         id: albumPageHeader
         title: albumPage.albumName
+
+        trailingActionBar.actions: [
+            Action {
+                iconName: 'close'
+                text: i18n.tr('Close')
+                visible: albumPage.wideMount
+                onTriggered: albumPage.closeCallback()
+            }
+        ]
     }
 
     ListView {

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-14 21:31+0000\n"
+"POT-Creation-Date: 2026-09-17 16:08+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,12 +17,24 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:129
+#: ../qml/Main.qml:122
 msgid "Internal error"
+msgstr ""
+
+#: ../qml/components/NavBar.qml:424
+msgid "Home"
+msgstr ""
+
+#: ../qml/components/NavBar.qml:439 ../qml/pages/LibraryPage.qml:138
+msgid "Library"
 msgstr ""
 
 #: ../qml/components/OfflineBanner.qml:17
 msgid "Offline - showing cached music"
+msgstr ""
+
+#: ../qml/pages/AlbumPage.qml:41 ../qml/pages/PlayerPage.qml:36
+msgid "Close"
 msgstr ""
 
 #: ../qml/pages/ErrorPage.qml:10
@@ -56,6 +68,47 @@ msgstr ""
 
 #: ../qml/pages/HomePage.qml:54
 msgid "Random"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:169
+msgid "Search"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:300
+msgid "tracks"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:315 ../qml/pages/LibraryPage.qml:384
+#: ../qml/pages/LibraryPage.qml:443 ../qml/pages/LibraryPage.qml:528
+msgid "No results"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:405 ../qml/pages/LibraryPage.qml:549
+msgid "Load more"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:512
+msgid "albums"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:513
+msgid "songs"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:566
+msgid "Playlists"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:567
+msgid "Albums"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:568
+msgid "Songs"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:569
+msgid "Artists"
 msgstr ""
 
 #: ../qml/pages/LoginPage.qml:39
@@ -94,16 +147,16 @@ msgstr ""
 msgid "Connection failed"
 msgstr ""
 
-#: ../qml/pages/PlayerPage.qml:25 ../qml/pages/PlayerPage.qml:31
-#: ../qml/pages/PlayerPage.qml:65 ../qml/pages/PlayerPage.qml:67
+#: ../qml/pages/PlayerPage.qml:31 ../qml/pages/PlayerPage.qml:46
+#: ../qml/pages/PlayerPage.qml:80 ../qml/pages/PlayerPage.qml:82
 msgid "Now Playing"
 msgstr ""
 
-#: ../qml/pages/PlayerPage.qml:31 ../qml/pages/PlayerPage.qml:65
-#: ../qml/pages/PlayerPage.qml:67
+#: ../qml/pages/PlayerPage.qml:46 ../qml/pages/PlayerPage.qml:80
+#: ../qml/pages/PlayerPage.qml:82
 msgid "Queue"
 msgstr ""
 
-#: ../qml/pages/PlayerPage.qml:65
+#: ../qml/pages/PlayerPage.qml:80
 msgid "Lyrics"
 msgstr ""
