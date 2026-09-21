@@ -34,9 +34,6 @@ Item {
     // Drag/tap API consumed by MiniBar's handle MouseArea.
     readonly property alias dragTarget: overlayPanel
     readonly property real dragMaxY: overlayPanel.height
-    // True while the handle is pressed; drives the floating state so
-    // the drag owns panel.y without fighting the animations.
-    property bool dragging: false
 
     // Chevron hint for the MiniBar: pull up when closed, drag down
     // when open. Empty when the overlay is disabled (wide mode).
@@ -44,7 +41,7 @@ Item {
         if (!enabled) {
             return ''
         }
-        return overlayPanel.y < overlayPanel.height * 0.5 ? 'down' : 'up'
+        return overlayPanel.y < overlayPanel.height * 0.5 ? 'go-down' : 'go-up'
     }
 
     function open() {
@@ -52,6 +49,8 @@ Item {
             return
         }
         overlayPanel.state = "expanded"
+        releaseAnimation.to = 0
+        releaseAnimation.restart()
         // Refresh lyrics if the Lyrics section was left open: the
         // song may have changed while the overlay was collapsed.
         if (overlayHeader.sections.selectedIndex === 2) {
@@ -61,6 +60,8 @@ Item {
 
     function collapse() {
         overlayPanel.state = "collapsed"
+        releaseAnimation.to = overlayPanel.height
+        releaseAnimation.restart()
     }
 
     // MiniBar tap entry: toggle in single-column mode, page player
@@ -81,22 +82,23 @@ Item {
         }
     }
 
-    // MiniBar drag handle callbacks.
+    // MiniBar drag handle callbacks. handlePressed only stops a
+    // mid-flight release animation so the finger owns panel.y
+    // immediately. handleReleased applies the 20% threshold
+    // (Contacts pattern) and is a harmless no-op animation-wise for
+    // pure taps: onClicked owns the tap toggle, real drags suppress
+    // it, so the two decisions never fight.
     function handlePressed() {
         if (!enabled) {
             return
         }
-        dragging = true
+        releaseAnimation.stop()
     }
 
     function handleReleased() {
         if (!enabled) {
-            dragging = false
             return
         }
-        dragging = false
-        // 20% release threshold (Contacts pattern): past it the
-        // panel commits open, otherwise it snaps home.
         if (overlayPanel.y < overlayPanel.height * 0.8) {
             open()
         } else {
@@ -167,50 +169,26 @@ Item {
         visible: overlayRoot.enabled && y < height
         color: theme.palette.normal.background
 
-        states: [
-            State {
-                name: "collapsed"
-                PropertyChanges { target: overlayPanel; y: overlayPanel.height }
-            },
-            State {
-                name: "expanded"
-                PropertyChanges { target: overlayPanel; y: 0 }
-            },
-            State {
-                name: "floating"
-                when: overlayRoot.dragging
+        // The ONE movement animation: open(), collapse() and the
+        // drag-release threshold always restart it, so a release
+        // after an imperative drag animates even when the semantic
+        // state string does not change (same-state assignment would
+        // be a no-op - the trap the deleted state machine had).
+        NumberAnimation {
+            id: releaseAnimation
+            target: overlayPanel
+            property: "y"
+            duration: LomiriAnimation.FastDuration
+            easing.type: Easing.Linear
+        }
+        onHeightChanged: {
+            // Keep a collapsed panel glued to the bottom across
+            // window resizes/rotations (imperative animation broke
+            // the y binding).
+            if (state === "collapsed" && !releaseAnimation.running) {
+                y = height
             }
-        ]
-
-        transitions: [
-            Transition {
-                to: "expanded"
-                SmoothedAnimation {
-                    target: overlayPanel
-                    property: "y"
-                    duration: LomiriAnimation.FastDuration
-                    easing.type: Easing.Linear
-                }
-            },
-            Transition {
-                from: "expanded"
-                to: "collapsed"
-                SmoothedAnimation {
-                    target: overlayPanel
-                    property: "y"
-                    duration: LomiriAnimation.SlowDuration
-                }
-            },
-            Transition {
-                from: "floating"
-                to: "collapsed"
-                SmoothedAnimation {
-                    target: overlayPanel
-                    property: "y"
-                    duration: LomiriAnimation.FastDuration
-                }
-            }
-        ]
+        }
 
         PageHeader {
             id: overlayHeader
@@ -240,7 +218,13 @@ Item {
                 top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
-                bottom: overlayRoot.miniBar.top
+                bottom: parent.bottom
+                // Legal anchor (parent); the bar strip is reserved
+                // via margin bindings - anchors cannot cross subtrees.
+                bottomMargin: (overlayRoot.miniBar !== null && overlayRoot.miniBar.visible
+                               ? overlayRoot.miniBar.height : 0)
+                              + (overlayRoot.navBar !== null && overlayRoot.navBar.visible
+                                 ? overlayRoot.navBar.height : 0)
             }
             visible: overlayHeader.sections.selectedIndex === 0
         }
@@ -253,7 +237,13 @@ Item {
                 top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
-                bottom: overlayRoot.miniBar.top
+                bottom: parent.bottom
+                // Legal anchor (parent); the bar strip is reserved
+                // via margin bindings - anchors cannot cross subtrees.
+                bottomMargin: (overlayRoot.miniBar !== null && overlayRoot.miniBar.visible
+                               ? overlayRoot.miniBar.height : 0)
+                              + (overlayRoot.navBar !== null && overlayRoot.navBar.visible
+                                 ? overlayRoot.navBar.height : 0)
             }
             visible: overlayHeader.sections.selectedIndex === 1
         }
@@ -265,7 +255,13 @@ Item {
                 top: overlayHeader.bottom
                 left: parent.left
                 right: parent.right
-                bottom: overlayRoot.miniBar.top
+                bottom: parent.bottom
+                // Legal anchor (parent); the bar strip is reserved
+                // via margin bindings - anchors cannot cross subtrees.
+                bottomMargin: (overlayRoot.miniBar !== null && overlayRoot.miniBar.visible
+                               ? overlayRoot.miniBar.height : 0)
+                              + (overlayRoot.navBar !== null && overlayRoot.navBar.visible
+                                 ? overlayRoot.navBar.height : 0)
             }
             visible: overlayHeader.sections.selectedIndex === 2
         }

@@ -493,8 +493,8 @@ Item {
             // design: the portrait player is the overlay - remove the
             // page (proper destroy: removePages on a tree page), the
             // mini bar reopens it as the overlay. Music never stops.
-            if (playerPageInstance !== null && playerPageInstance.active) {
-                console.log('navBar: shrink with visible player page, removing')
+            if (playerPageInstance !== null) {
+                console.log('navBar: shrink, removing player page (portrait player is the overlay)')
                 pageLayout.removePages(playerPageInstance)
             }
         }
