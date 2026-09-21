@@ -77,9 +77,10 @@ Rectangle {
     // Tap = openPlayerCallback (overlay toggle in single-column
     // mode, page player in wide mode). Drag = the panel follows the
     // finger via the injected overlayHandle; a real drag suppresses
-    // onClicked, so tap and drag never double-fire. The enabled gate
-    // on the drag target keeps a wide-mode drag from moving the
-    // invisible panel.
+    // onClicked, so tap and drag never double-fire. The release
+    // reports the sampled drag direction (Contacts pattern: 2gu
+    // sampling) so the overlay can close on ANY downward drag from
+    // the open state.
     MouseArea {
         preventStealing: true
         anchors {
@@ -88,6 +89,8 @@ Rectangle {
             bottom: parent.bottom
             right: miniBarControls.left
         }
+        property real previousY: -1
+        property string dragDirection: 'None'
         drag {
             axis: Drag.YAxis
             target: miniBar.overlayHandle !== null && miniBar.overlayHandle.enabled
@@ -97,16 +100,37 @@ Rectangle {
                       ? miniBar.overlayHandle.dragMaxY : 0
         }
         onPressed: {
+            console.log('miniBar: handle pressed y=' + mouse.y)
+            previousY = mouse.y
+            dragDirection = 'None'
             if (miniBar.overlayHandle !== null) {
                 miniBar.overlayHandle.handlePressed()
             }
         }
-        onReleased: {
-            if (miniBar.overlayHandle !== null) {
-                miniBar.overlayHandle.handleReleased()
+        onPositionChanged: {
+            // 2gu sampling: small jitters never count as direction.
+            if (previousY < 0) {
+                return
             }
+            var yOffset = previousY - mouse.y
+            if (Math.abs(yOffset) <= units.gu(2)) {
+                return
+            }
+            previousY = mouse.y
+            dragDirection = yOffset > 0 ? 'BottomToTop' : 'TopToBottom'
         }
-        onClicked: openPlayerCallback()
+        onReleased: {
+            console.log('miniBar: handle released direction=' + dragDirection)
+            if (miniBar.overlayHandle !== null) {
+                miniBar.overlayHandle.handleReleased(dragDirection)
+            }
+            previousY = -1
+            dragDirection = 'None'
+        }
+        onClicked: {
+            console.log('miniBar: handle clicked (tap)')
+            openPlayerCallback()
+        }
     }
 
     Row {

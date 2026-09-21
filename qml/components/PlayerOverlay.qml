@@ -49,6 +49,7 @@ Item {
             return
         }
         overlayPanel.state = "expanded"
+        console.log('playerOverlay: open')
         releaseAnimation.to = 0
         releaseAnimation.restart()
         // Refresh lyrics if the Lyrics section was left open: the
@@ -60,6 +61,7 @@ Item {
 
     function collapse() {
         overlayPanel.state = "collapsed"
+        console.log('playerOverlay: collapse')
         releaseAnimation.to = overlayPanel.height
         releaseAnimation.restart()
     }
@@ -68,7 +70,7 @@ Item {
     // in wide mode / login.
     function tapAction() {
         console.log('playerOverlay: tapAction enabled=' + enabled
-            + ' state=' + overlayPanel.state)
+            + ' state=' + overlayPanel.state + ' chevron=' + chevronIcon)
         if (!enabled) {
             if (navBar !== null) {
                 navBar.openPlayer()
@@ -82,21 +84,29 @@ Item {
         }
     }
 
-    // MiniBar drag handle callbacks. handlePressed only stops a
-    // mid-flight release animation so the finger owns panel.y
-    // immediately. handleReleased applies the 20% threshold
-    // (Contacts pattern) and is a harmless no-op animation-wise for
-    // pure taps: onClicked owns the tap toggle, real drags suppress
-    // it, so the two decisions never fight.
+    // MiniBar drag handle callbacks. handlePressed stops a mid-flight
+    // release animation so the finger owns panel.y immediately.
+    // handleReleased is direction-aware (Contacts semantics): ANY
+    // downward drag from the open overlay closes; everything else
+    // falls back to the 80% threshold. Pure taps stay no-ops here -
+    // onClicked owns the toggle, real drags suppress it.
     function handlePressed() {
         if (!enabled) {
             return
         }
+        console.log('playerOverlay: handlePressed y=' + overlayPanel.y
+            + ' state=' + overlayPanel.state)
         releaseAnimation.stop()
     }
 
-    function handleReleased() {
+    function handleReleased(dragDirection) {
         if (!enabled) {
+            return
+        }
+        console.log('playerOverlay: handleReleased direction=' + dragDirection
+            + ' y=' + overlayPanel.y + ' state=' + overlayPanel.state)
+        if (dragDirection === 'TopToBottom' && overlayPanel.state === "expanded") {
+            collapse()
             return
         }
         if (overlayPanel.y < overlayPanel.height * 0.8) {
