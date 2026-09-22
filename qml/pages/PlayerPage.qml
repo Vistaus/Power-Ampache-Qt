@@ -43,7 +43,7 @@ Page {
         // sections is read-only: populate the model at completion,
         // never assign sections directly.
         Component.onCompleted: {
-            sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue')]
+            sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Info')]
         }
     }
 
@@ -71,17 +71,20 @@ Page {
     // pointing past the end of the model.
     function setLyricsSection(present) {
         var model = header.sections.model
-        var hasLyrics = model.length > 2
+        var hasLyrics = model.length > 3
         if (present === hasLyrics) {
             return
         }
         var selected = header.sections.selectedIndex
         if (present) {
-            header.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Lyrics')]
+            // Lyrics is the dynamic tail at index 3; adding it never
+            // disturbs the static indices 0-2.
+            header.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Info'), i18n.tr('Lyrics')]
         } else {
-            header.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue')]
-            if (selected > 1) {
-                selected = 0
+            header.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Info')]
+            if (selected > 2) {
+                // Was on Lyrics (3); land on Info (2), not root.
+                selected = 2
             }
         }
         header.sections.selectedIndex = selected
@@ -124,13 +127,29 @@ Page {
             right: parent.right
             bottom: parent.bottom
         }
+        visible: playerPageHeader.sections.selectedIndex === 3
+    }
+
+    // Song info section (static index 2; Lyrics is the dynamic
+    // tail at index 3).
+    SongInfoPanel {
+        id: songInfoPanel
+        playback: playerPage.playback
+        pythonBridge: playerPage.pythonBridge
+        formatDuration: playerPage.formatDuration
+        anchors {
+            top: playerPageHeader.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
         visible: playerPageHeader.sections.selectedIndex === 2
     }
 
     Connections {
         target: playerPageHeader.sections
         onSelectedIndexChanged: {
-            if (playerPageHeader.sections.selectedIndex === 2) {
+            if (playerPageHeader.sections.selectedIndex === 3) {
                 playerPage.loadLyrics()
             }
         }
@@ -139,7 +158,7 @@ Page {
     Connections {
         target: playback
         onCurrentSongChanged: {
-            if (playerPageHeader.sections.selectedIndex === 2) {
+            if (playerPageHeader.sections.selectedIndex === 3) {
                 playerPage.loadLyrics()
             }
         }

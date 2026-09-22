@@ -581,6 +581,34 @@ def getStreamUrls(songIds, stats=None):
         return _errorDict(exception)
 
 
+def getSongInfo(songId):
+    "Song metadata for the Info tab: direct sqlite read from the cached SongEntity (local, no network), same pattern as getLyrics."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'info': None}
+        connection = sqlite3.connect(dbPath)
+        try:
+            cursor = connection.execute(
+                'SELECT title, artistName, albumName, albumArtist, genre, year, '
+                'trackNumber, disk, time, bitrate, rateHz, channels, size, '
+                'playCount, rating, composer, comment, language, format '
+                'FROM SongEntity WHERE mediaId = ?', (songId,)
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return {'ok': True, 'info': None}
+            keys = ['title', 'artistName', 'albumName', 'albumArtist', 'genre',
+                    'year', 'trackNumber', 'disk', 'time', 'bitrate', 'rateHz',
+                    'channels', 'size', 'playCount', 'rating', 'composer',
+                    'comment', 'language', 'format']
+            return {'ok': True, 'info': dict(zip(keys, row))}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def getLyrics(songId):
     "Lyrics for the player page: the cached SongEntity.lyrics field via direct sqlite (local cache, no network), same pattern as getFavouriteAlbums."
     try:
