@@ -129,6 +129,8 @@ Item {
             text: playback.currentSong !== null ? playback.currentSong.title : ''
             fontSize: 'large'
             font.bold: true
+            wrapMode: Text.Wrap
+            maximumLineCount: 2
             elide: Text.ElideRight
         }
 

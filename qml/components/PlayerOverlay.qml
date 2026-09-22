@@ -35,6 +35,11 @@ Item {
     readonly property alias dragTarget: overlayPanel
     readonly property real dragMaxY: overlayPanel.height
 
+    // Release decision: fraction of the panel height the sheet must
+    // travel for the release to commit the opposite state. 0.2 =
+    // one fifth of the screen. Tuned on device.
+    readonly property real releaseTravelFraction: 0.2
+
     // Pull-to-dismiss state for the scrollable sections (Queue/
     // Lyrics): see the overscroll* functions below the drag handle
     // callbacks. Threshold in gu - tune on device.
@@ -102,14 +107,22 @@ Item {
         }
         console.log('playerOverlay: handleReleased direction=' + dragDirection
             + ' y=' + overlayPanel.y + ' state=' + overlayPanel.state)
-        if (dragDirection === 'TopToBottom' && overlayPanel.state === "expanded") {
-            collapse()
-            return
-        }
-        if (overlayPanel.y < overlayPanel.height * 0.8) {
-            open()
+        // Position-based release: where the sheet sits decides, the
+        // sampled direction stays in the log only. Expanded: past
+        // one fifth down = close, otherwise snap back open.
+        // Collapsed: past one fifth up = open, otherwise fall back.
+        if (overlayPanel.state === "expanded") {
+            if (overlayPanel.y > dragMaxY * releaseTravelFraction) {
+                collapse()
+            } else {
+                open()
+            }
         } else {
-            collapse()
+            if (overlayPanel.y < dragMaxY * (1 - releaseTravelFraction)) {
+                open()
+            } else {
+                collapse()
+            }
         }
     }
 
