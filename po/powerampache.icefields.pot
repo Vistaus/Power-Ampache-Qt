@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-21 22:51+0000\n"
+"POT-Creation-Date: 2026-09-22 18:36+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -33,22 +33,22 @@ msgstr ""
 msgid "Offline - showing cached music"
 msgstr ""
 
-#: ../qml/components/PlayerOverlay.qml:150 ../qml/pages/PlayerPage.qml:80
+#: ../qml/components/PlayerOverlay.qml:214 ../qml/pages/PlayerPage.qml:80
 msgid "Lyrics"
 msgstr ""
 
-#: ../qml/components/PlayerOverlay.qml:150
-#: ../qml/components/PlayerOverlay.qml:152
-#: ../qml/components/PlayerOverlay.qml:196
-#: ../qml/components/PlayerOverlay.qml:207 ../qml/pages/PlayerPage.qml:31
+#: ../qml/components/PlayerOverlay.qml:214
+#: ../qml/components/PlayerOverlay.qml:216
+#: ../qml/components/PlayerOverlay.qml:260
+#: ../qml/components/PlayerOverlay.qml:271 ../qml/pages/PlayerPage.qml:31
 #: ../qml/pages/PlayerPage.qml:46 ../qml/pages/PlayerPage.qml:80
 #: ../qml/pages/PlayerPage.qml:82
 msgid "Now Playing"
 msgstr ""
 
-#: ../qml/components/PlayerOverlay.qml:150
-#: ../qml/components/PlayerOverlay.qml:152
-#: ../qml/components/PlayerOverlay.qml:207 ../qml/pages/PlayerPage.qml:46
+#: ../qml/components/PlayerOverlay.qml:214
+#: ../qml/components/PlayerOverlay.qml:216
+#: ../qml/components/PlayerOverlay.qml:271 ../qml/pages/PlayerPage.qml:46
 #: ../qml/pages/PlayerPage.qml:80 ../qml/pages/PlayerPage.qml:82
 msgid "Queue"
 msgstr ""
