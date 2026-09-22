@@ -91,7 +91,8 @@ Flickable {
                 add(i18n.tr('Duration'), formatDuration(info.time))
             }
             if (info.bitrate > 0) {
-                add(i18n.tr('Bitrate'), info.bitrate + ' kbps')
+                // Bitrate is stored bits/sec; display kbps.
+                add(i18n.tr('Bitrate'), Math.round(info.bitrate / 1000) + ' kbps')
             }
             if (info.rateHz > 0) {
                 add(i18n.tr('Sample rate'), (info.rateHz / 1000).toFixed(1) + ' kHz')
@@ -106,10 +107,21 @@ Flickable {
             }
             add(i18n.tr('Format'), info.format)
             add(i18n.tr('Composer'), info.composer)
-            add(i18n.tr('Play count'), info.playCount)
-            add(i18n.tr('Rating'), info.rating)
+            if (info.playCount > 0) {
+                add(i18n.tr('Play count'), info.playCount)
+            }
+            if (info.rating > 0) {
+                add(i18n.tr('Rating'), info.rating)
+            }
             add(i18n.tr('Language'), info.language)
             add(i18n.tr('Comment'), info.comment)
+            add(i18n.tr('Publisher'), info.publisher)
+            add(i18n.tr('MusicBrainz ID'), info.mbId)
+            if (info.replayGainTrackGain !== null
+                    && info.replayGainTrackGain !== undefined
+                    && info.replayGainTrackGain !== 0) {
+                add(i18n.tr('Replay gain'), info.replayGainTrackGain + ' dB')
+            }
             infoRows = rows
         })
     }

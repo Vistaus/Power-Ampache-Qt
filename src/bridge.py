@@ -12,6 +12,7 @@ this module adds no retry loops or session state of its own, and it never
 logs passwords or stream URLs.
 """
 
+import json
 import os
 import socket
 import sqlite3
@@ -592,7 +593,8 @@ def getSongInfo(songId):
             cursor = connection.execute(
                 'SELECT title, artistName, albumName, albumArtist, genre, year, '
                 'trackNumber, disk, time, bitrate, rateHz, channels, size, '
-                'playCount, rating, composer, comment, language, format '
+                'playCount, rating, composer, comment, language, format, '
+                'publisher, mbId, replayGainTrackGain '
                 'FROM SongEntity WHERE mediaId = ?', (songId,)
             )
             row = cursor.fetchone()
@@ -601,8 +603,21 @@ def getSongInfo(songId):
             keys = ['title', 'artistName', 'albumName', 'albumArtist', 'genre',
                     'year', 'trackNumber', 'disk', 'time', 'bitrate', 'rateHz',
                     'channels', 'size', 'playCount', 'rating', 'composer',
-                    'comment', 'language', 'format']
-            return {'ok': True, 'info': dict(zip(keys, row))}
+                    'comment', 'language', 'format', 'publisher', 'mbId',
+                    'replayGainTrackGain']
+            info = dict(zip(keys, row))
+            # The genre column stores a JSON array of objects
+            # ('[{"id":"9","name":"Metal"}]'); keep only the name of
+            # each genre, comma-joined. A non-JSON value (bad tag)
+            # falls through unchanged.
+            try:
+                genres = json.loads(info['genre'])
+                info['genre'] = ', '.join(
+                    genre['name'] for genre in genres
+                    if isinstance(genre, dict) and 'name' in genre)
+            except (ValueError, TypeError):
+                pass
+            return {'ok': True, 'info': info}
         finally:
             connection.close()
     except Exception as exception:
