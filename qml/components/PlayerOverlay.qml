@@ -35,6 +35,12 @@ Item {
     readonly property alias dragTarget: overlayPanel
     readonly property real dragMaxY: overlayPanel.height
 
+    // Pull-to-dismiss state for the scrollable sections (Queue/
+    // Lyrics): see the overscroll* functions below the drag handle
+    // callbacks. Threshold in gu - tune on device.
+    property bool overscrollActive: false
+    readonly property real overscrollThreshold: units.gu(6)
+
     function open() {
         if (!enabled) {
             return
@@ -104,6 +110,51 @@ Item {
             open()
         } else {
             collapse()
+        }
+    }
+
+    // --- Overscroll pull-to-dismiss (Queue/Lyrics sections) ---
+    // The scrollable sections forward their top-overshoot here.
+    // While the user drags down past the first row, the sheet tracks
+    // the overshoot distance; on release, past the threshold = close,
+    // otherwise snap home; dragging back up into the content
+    // retracts. overscrollActive gates release/retract, and the
+    // pull follow is skipped while releaseAnimation runs so the
+    // Flickables' own rebound (which also produces negative
+    // contentY) never fights the snap-home animation.
+    function overscrollPull(offset) {
+        if (!enabled || overlayPanel.state !== "expanded") {
+            return
+        }
+        if (releaseAnimation.running) {
+            return
+        }
+        releaseAnimation.stop()
+        overscrollActive = true
+        overlayPanel.y = Math.min(Math.max(0, offset), dragMaxY)
+    }
+
+    function overscrollRetract() {
+        if (!overscrollActive) {
+            return
+        }
+        overscrollActive = false
+        console.log('playerOverlay: overscroll retract')
+        releaseAnimation.to = 0
+        releaseAnimation.restart()
+    }
+
+    function overscrollRelease(distance) {
+        if (!overscrollActive) {
+            return
+        }
+        overscrollActive = false
+        console.log('playerOverlay: overscroll release distance=' + distance)
+        if (distance > overscrollThreshold) {
+            collapse()
+        } else {
+            releaseAnimation.to = 0
+            releaseAnimation.restart()
         }
     }
 
@@ -215,6 +266,7 @@ Item {
             playback: overlayRoot.playback
             audioEngine: overlayRoot.audioEngine
             formatDuration: overlayRoot.formatDuration
+            overlayRoot: overlayRoot
             anchors {
                 top: overlayHeader.bottom
                 left: parent.left
@@ -228,6 +280,7 @@ Item {
         QueuePanel {
             id: queuePanel
             playback: overlayRoot.playback
+            overlayRoot: overlayRoot
             anchors {
                 top: overlayHeader.bottom
                 left: parent.left
@@ -240,6 +293,7 @@ Item {
         // Lyrics section.
         LyricsPanel {
             id: lyricsPanel
+            overlayRoot: overlayRoot
             anchors {
                 top: overlayHeader.bottom
                 left: parent.left
