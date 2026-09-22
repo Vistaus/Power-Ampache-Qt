@@ -33,7 +33,7 @@ Item {
     // Derived from the PANE height only - deriving it from the
     // column's own height would be a binding loop (compact changes
     // spacing, spacing changes the column height).
-    readonly property bool compact: height < units.gu(32)
+    readonly property bool compact: height < units.gu(40)
 
     // Whole-panel drag surface: FIRST child = lowest z, so every
     // interactive sibling declared below sits on top and keeps its
@@ -347,6 +347,12 @@ Item {
     }
 
     Component.onCompleted: {
+        // Diagnostic: measured pane height in grid units and the
+        // resulting compact state. Remove after the threshold is
+        // tuned.
+        console.log('nowPlaying: panel height=' + height
+            + ' gu=' + (height / units.gu(1)).toFixed(1)
+            + ' compact=' + compact)
         // (Re)opened with a track already loaded but paused:
         // seed current values so the labels and the progress bar
         // are never blank.
