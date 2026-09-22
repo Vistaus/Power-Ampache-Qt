@@ -129,18 +129,12 @@ Item {
         anchors {
             left: parent.left
             right: parent.right
-            // Compact: center vertically so reclaimed space splits
-            // evenly above and below instead of pooling at the top
-            // (bottom-anchored overflow was the original clip bug).
-            // No binding loop: compact derives from the pane height,
-            // and the column's own height does not depend on its
-            // anchors.
-            bottom: compact ? undefined : parent.bottom
-            verticalCenter: compact ? parent.verticalCenter : undefined
+            bottom: parent.bottom
         }
-        // 1gu in compact: the pane cannot fit the column at 2gu
-        // (~30.5gu of content vs ~28gu of pane) - 1gu is the
-        // fitting floor, proven on device.
+        // 1gu in compact: device-proven fitting value (1.0.19
+        // round, 2026-09-22, log-measured pane 36.3gu). Do not
+        // change the spacing or the anchor block without a device
+        // round - both were mis-tuned from arithmetic once.
         spacing: compact ? units.gu(1) : units.gu(2)
 
         Label {
