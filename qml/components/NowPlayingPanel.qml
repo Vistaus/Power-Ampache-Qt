@@ -129,9 +129,16 @@ Item {
         anchors {
             left: parent.left
             right: parent.right
-            bottom: parent.bottom
+            // Compact: center vertically so reclaimed space splits
+            // evenly above and below instead of pooling at the top
+            // (bottom-anchored overflow was the original clip bug).
+            // No binding loop: compact derives from the pane height,
+            // and the column's own height does not depend on its
+            // anchors.
+            bottom: compact ? undefined : parent.bottom
+            verticalCenter: compact ? parent.verticalCenter : undefined
         }
-        spacing: compact ? units.gu(1) : units.gu(2)
+        spacing: units.gu(2)
 
         Label {
             width: parent.width
@@ -305,7 +312,7 @@ Item {
             }
         }
 
-        Item { width: 1; height: units.gu(1); visible: !compact }
+        Item { width: 1; height: units.gu(1) }
     }
 
     // Total-time fallback (ms): the hub often cannot determine a
