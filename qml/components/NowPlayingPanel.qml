@@ -138,7 +138,10 @@ Item {
             bottom: compact ? undefined : parent.bottom
             verticalCenter: compact ? parent.verticalCenter : undefined
         }
-        spacing: units.gu(2)
+        // 1gu in compact: the pane cannot fit the column at 2gu
+        // (~30.5gu of content vs ~28gu of pane) - 1gu is the
+        // fitting floor, proven on device.
+        spacing: compact ? units.gu(1) : units.gu(2)
 
         Label {
             width: parent.width
