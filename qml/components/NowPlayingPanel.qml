@@ -25,6 +25,16 @@ Item {
     property var formatDuration
     property var overlayRoot
 
+    // Compact mode: when the pane is too short to show the cover
+    // (the same space class where the cover hides), the controls
+    // column itself is taller than the pane and its top rows clip.
+    // Compact tightens the spacing and drops the album row so
+    // title/artist/bar/transport always fit at full font size.
+    // Derived from the PANE height only - deriving it from the
+    // column's own height would be a binding loop (compact changes
+    // spacing, spacing changes the column height).
+    readonly property bool compact: height < units.gu(32)
+
     // Whole-panel drag surface: FIRST child = lowest z, so every
     // interactive sibling declared below sits on top and keeps its
     // taps. Same direction-aware release machinery as the grabber
@@ -121,7 +131,7 @@ Item {
             right: parent.right
             bottom: parent.bottom
         }
-        spacing: units.gu(2)
+        spacing: compact ? units.gu(1) : units.gu(2)
 
         Label {
             width: parent.width
@@ -147,6 +157,9 @@ Item {
             text: playback.currentSong !== null ? playback.currentSong.albumName : ''
             fontSize: 'small'
             elide: Text.ElideRight
+            // Column excludes invisible children from its layout,
+            // so hiding the album row reclaims its height entirely.
+            visible: !compact
         }
 
         Item {
@@ -292,7 +305,7 @@ Item {
             }
         }
 
-        Item { width: 1; height: units.gu(1) }
+        Item { width: 1; height: units.gu(1); visible: !compact }
     }
 
     // Total-time fallback (ms): the hub often cannot determine a
