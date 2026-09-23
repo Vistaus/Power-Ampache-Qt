@@ -30,6 +30,13 @@ design conversation when picked up.
   the library (art URL from the server, UserEntity already has the `art`
   column) unlocks the real avatar image.
 
+- **Desktop packaging for testers (AppImage)** — deferred until his
+  own testing finishes. Container/docker route rejected: container
+  audio ignores host volume (own Pulse stream). AppImage = the agreed
+  eventual shape: bundle qmlscene + Lomiri Components + PyOtherSide +
+  Python out of the clickable image into one portable file. UT clicks
+  need no work (already one-file installers).
+
 - **Bitcoin donation link** — pending verification that UT opens
   `bitcoin:` wallet URIs from apps; owner unsure, revisit later.
 
