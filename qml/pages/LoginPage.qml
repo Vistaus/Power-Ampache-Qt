@@ -34,6 +34,23 @@ Page {
         width: Math.min(parent.width - units.gu(8), units.gu(40))
         spacing: units.gu(2)
 
+        Image {
+            width: units.gu(14)
+            height: units.gu(14)
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: Qt.resolvedUrl('../assets/logo.svg')
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+        }
+
+        Label {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: i18n.tr('POWER AMPACHE')
+            fontSize: 'large'
+            font.bold: true
+        }
+
         Label {
             width: parent.width
             text: i18n.tr('Connect to your Ampache server')
