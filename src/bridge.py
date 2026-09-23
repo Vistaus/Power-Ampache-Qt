@@ -85,10 +85,21 @@ def _captureHasArt(rows, kind):
         objectId = str(row.get('id') or '')
         if not objectId:
             continue
-        try:
-            hasArt = int(row.get('has_art') or 1)
-        except (TypeError, ValueError):
+        rawHasArt = row.get('has_art')
+        if rawHasArt is None:
+            # Missing flag: default artful (do not punish rows the
+            # server never labeled).
             hasArt = 1
+        else:
+            try:
+                # JSON booleans: int(True)==1, int(False)==0. Never a
+                # falsy default - False must stay False or the artless
+                # fallback can never fire.
+                hasArt = int(rawHasArt)
+            except (TypeError, ValueError):
+                # Unconvertable forms ('true'/'false' style strings)
+                # resolve via explicit truthiness.
+                hasArt = 1 if rawHasArt in (True, 'true', 'True', 1, '1') else 0
         if hasArt == 0:
             _ARTLESS_IDS[kind].add(objectId)
         else:
