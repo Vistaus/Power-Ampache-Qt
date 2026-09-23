@@ -448,13 +448,37 @@ Item {
             if (hubPlaylist.currentIndex !== engine.eomArmedIndex) {
                 return
             }
-            // b. Session alive (e.g. repeat-one reloop) - NEVER
-            // fight a live session.
-            if (audio.playbackState === MediaPlayer.PlayingState) {
+            // b. Natural end of the queue (repeat off, Sequential
+            // stop). The hub can leave playbackState REPORTING
+            // PlayingState after the final track ends (the
+            // EndOfMedia-without-StoppedState quirk), so the truth
+            // sampler's state gate never runs and engine.playing
+            // stays stuck true - the play button shows pause with no
+            // music playing. This branch fires ONLY under repeat
+            // 'off': a natural end exists only there, which removes
+            // any possibility of stopping a live repeat-all wrap
+            // mid-loop. Position proof (frozen at the last sample
+            // 1.5s after EndOfMedia) confirms genuinely finished.
+            // The in-flight guards close the tap race: a stop-then-
+            // commit or rebuild answering a tap inside the timer
+            // window must never be interrupted. stop() on an
+            // already-ended session is a no-op whose StoppedState
+            // lets the truth sampler own false from then on; the
+            // direct mirror settle corrects the button immediately.
+            if (engine.repeat === 'off'
+                    && (engine.queueStart + hubPlaylist.currentIndex + 1) >= engine.queue.length
+                    && audio.position === engine.lastSampledPos
+                    && !engine.pendingCommit
+                    && !engine.awaitingStop
+                    && !engine.rebuilding) {
+                console.log('engine: natural queue end settled, forcing stop')
+                audio.stop()
+                engine.playing = false
                 return
             }
-            // c. Natural end of the queue.
-            if ((engine.queueStart + hubPlaylist.currentIndex + 1) >= engine.queue.length) {
+            // c. Session alive (e.g. repeat reloop) - NEVER fight a
+            // live session.
+            if (audio.playbackState === MediaPlayer.PlayingState) {
                 return
             }
             console.log('engine: eom fallback advanced the queue')
