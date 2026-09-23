@@ -70,6 +70,26 @@ def _errorDict(exception):
     return {'ok': False, 'errorKind': errorKind, 'message': str(exception)}
 
 
+def _streamingBitrate():
+    "Stored streaming quality for stream URLs; None = omit the bitrate param (original quality)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return None
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT streamingQuality FROM LocalSettingsEntity LIMIT 1'
+            ).fetchone()
+            if row is None or not row[0]:
+                return None
+            return int(row[0])
+        finally:
+            connection.close()
+    except Exception:
+        return None
+
+
 def init():
     "One-time startup hook for QML: make sure the cache database exists before any other bridge call."
     try:
@@ -555,13 +575,15 @@ def searchArtists(query):
 
 
 def getStreamUrl(songId, stats=None):
-    """Return a stream URL for the built-in player. The stats argument
+    """Return a stream URL for the built-in player. The bitrate comes
+    from the stored streaming quality (LocalSettingsEntity); None =
+    original quality (the bitrate param is omitted). The stats argument
     passes through verbatim: real plays omit it (the library default
     records the play), the spike passes 0. The URL embeds the live
     session token - never log it, never persist it."""
     try:
         client = getClient()
-        url = client.getStreamUrl(songId, stats=stats)
+        url = client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats)
         return {'ok': True, 'url': url}
     except Exception as exception:
         return _errorDict(exception)
@@ -571,12 +593,13 @@ def getStreamUrls(songIds, stats=None):
     """Return stream URLs for a list of song ids in one call, for the QML
     Playlist architecture: the media-hub opens tracks itself, so the whole
     queue is handed over as URLs at tap time. Pure URL building per id, no
-    network. The stats argument passes through verbatim to every URL; real
-    plays omit it. The URLs embed the live session token - never log them,
-    never persist them."""
+    network. The bitrate comes from the stored streaming quality
+    (LocalSettingsEntity); None = original quality. The stats argument
+    passes through verbatim to every URL; real plays omit it. The URLs
+    embed the live session token - never log them, never persist them."""
     try:
         client = getClient()
-        urls = [client.getStreamUrl(songId, stats=stats) for songId in songIds]
+        urls = [client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats) for songId in songIds]
         return {'ok': True, 'urls': urls}
     except Exception as exception:
         return _errorDict(exception)
@@ -641,5 +664,165 @@ def getLyrics(songId):
             return {'ok': True, 'lyrics': lyrics}
         finally:
             connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getUserInfo():
+    "Menu header: username + server address from the stored credentials (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': False, 'errorKind': 'credentials', 'message': 'no credentials stored'}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT username, serverUrl FROM CredentialsEntity LIMIT 1'
+            ).fetchone()
+            if row is None:
+                return {'ok': False, 'errorKind': 'credentials', 'message': 'no credentials stored'}
+            return {'ok': True, 'username': row[0], 'serverUrl': row[1]}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getServerInfo():
+    "About page: server address + API version + catalog counts from SessionEntity (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': False, 'errorKind': 'credentials', 'message': 'no session stored'}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT api, songs, albums, artists, playlists FROM SessionEntity LIMIT 1'
+            ).fetchone()
+            if row is None:
+                return {'ok': False, 'errorKind': 'credentials', 'message': 'no session stored'}
+            return {'ok': True, 'api': row[0], 'songs': row[1], 'albums': row[2],
+                    'artists': row[3], 'playlists': row[4]}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getAppInfo():
+    "About page: app title + version from the installed manifest.json (click root, one level above src/)."
+    try:
+        manifestPath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), '..', 'manifest.json')
+        with open(manifestPath, 'r') as manifestFile:
+            manifest = json.load(manifestFile)
+        return {'ok': True, 'title': manifest.get('title', ''),
+                'version': manifest.get('version', '')}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getStreamingQuality():
+    "Current stored streaming quality; 320 is the default when nothing is stored."
+    quality = _streamingBitrate()
+    return {'ok': True, 'quality': quality if quality else 320}
+
+
+def setStreamingQuality(quality):
+    "Persist the streaming quality in LocalSettingsEntity (app-owned table, library never writes it). 0 = lossless (bitrate param omitted)."
+    try:
+        dbPath = getDbPath()
+        ensureDatabase(dbPath)
+        connection = sqlite3.connect(dbPath)
+        try:
+            connection.execute(
+                'INSERT OR REPLACE INTO LocalSettingsEntity '
+                "(username, theme, enableRemoteLogging, hideDonationButton, smartDownloadEnabled, "
+                'enableAutoUpdates, streamingQuality, isNormalizeVolumeEnabled, '
+                'isMonoAudioEnabled, isGlobalShuffleEnabled, playlistSongsSorting, '
+                'isOfflineModeEnabled, isDownloadsSdCard, sleepTimerMinutes, '
+                "saveSongAfterPlayback, saveFavouriteSongAfterPlayback) "
+                "VALUES ((SELECT username FROM CredentialsEntity LIMIT 1), '', 0, 0, 0, 0, ?, 0, 0, 0, 'ASC', 0, 0, 0, 0, 0)",
+                (int(quality),)
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getCacheStats():
+    "Cache size panel: row counts + total song bytes from the cache tables (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songs': 0, 'albums': 0, 'artists': 0,
+                    'playlists': 0, 'totalSize': 0}
+        connection = sqlite3.connect(dbPath)
+        try:
+            def _count(table):
+                return connection.execute(
+                    'SELECT COUNT(*) FROM ' + table).fetchone()[0]
+            sizeRow = connection.execute(
+                'SELECT COALESCE(SUM(size), 0) FROM SongEntity').fetchone()
+            return {'ok': True,
+                    'songs': _count('SongEntity'),
+                    'albums': _count('AlbumEntity'),
+                    'artists': _count('ArtistEntity'),
+                    'playlists': _count('PlaylistEntity'),
+                    'totalSize': sizeRow[0]}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def clearCache():
+    "Clear cached music data. CredentialsEntity/SessionEntity/LocalSettingsEntity share this DB file and are PRESERVED — only data tables are deleted."
+    try:
+        dbPath = getDbPath()
+        if os.path.exists(dbPath):
+            connection = sqlite3.connect(dbPath)
+            try:
+                for table in ['SongEntity', 'AlbumEntity', 'ArtistEntity',
+                              'PlaylistEntity', 'PlaylistSongEntity',
+                              'GenreEntity', 'HistoryEntity',
+                              'RecommendedArtistEntity',
+                              'DownloadedSongEntity']:
+                    connection.execute('DELETE FROM ' + table)
+                connection.commit()
+            finally:
+                connection.close()
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def logout():
+    "Destroy the session (best-effort server goodbye, offline-safe) then delete the local session + credentials rows. The cache DB and LocalSettingsEntity survive. The thread-local client is discarded (goodbye() marks it terminated)."
+    try:
+        client = None
+        try:
+            client = getClient()
+        except Exception:
+            client = None
+        if client is not None:
+            try:
+                client.goodbye()
+            except Exception:
+                pass
+        dbPath = getDbPath()
+        if os.path.exists(dbPath):
+            connection = sqlite3.connect(dbPath)
+            try:
+                connection.execute('DELETE FROM SessionEntity')
+                connection.execute('DELETE FROM CredentialsEntity')
+                connection.commit()
+            finally:
+                connection.close()
+        _threadLocal.client = None
+        return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)

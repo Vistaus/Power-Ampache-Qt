@@ -6,6 +6,7 @@
 import QtQuick 2.7
 import Lomiri.Components 1.3
 import "../components"
+import Lomiri.Components.Popups 1.3
 
 // Home dashboard: six stat rows of album covers, rendered cache-first
 // with background refreshes. pythonBridge (the Python element),
@@ -18,10 +19,64 @@ Page {
     property var pythonBridge
     property var mainView
     property var albumRowDelegate
+    property var openSettingsCallback: null
+    property var openAboutCallback: null
+    property string username: ''
+    property string serverUrl: ''
 
     header: PageHeader {
         id: pageHeader
         title: i18n.tr('Power Ampache')
+        contents: Item {
+            anchors.fill: parent
+
+            Row {
+                anchors {
+                    left: parent.left
+                    leftMargin: units.gu(1.5)
+                    verticalCenter: parent.verticalCenter
+                }
+                spacing: units.gu(1.5)
+
+                Rectangle {
+                    id: avatarCircle
+                    width: units.gu(4)
+                    height: units.gu(4)
+                    radius: width / 2
+                    color: theme.palette.normal.base
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: homePage.username
+                              ? homePage.username.charAt(0).toUpperCase() : '?'
+                        fontSize: 'medium'
+                        color: theme.palette.normal.baseText
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            var menu = PopupUtils.open(userMenuComponent, avatarCircle)
+                            menu.username = homePage.username
+                            menu.serverUrl = homePage.serverUrl
+                            menu.openSettingsCallback = homePage.openSettingsCallback
+                            menu.openAboutCallback = homePage.openAboutCallback
+                        }
+                    }
+                }
+
+                Label {
+                    text: pageHeader.title
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
+    }
+
+    Component {
+        id: userMenuComponent
+        UserMenu {}
     }
 
     Flickable {
@@ -71,6 +126,12 @@ Page {
                 }
             })
         }
+        pythonBridge.call('bridge.getUserInfo', [], function(userInfo) {
+            if (userInfo && userInfo.ok) {
+                homePage.username = userInfo.username
+                homePage.serverUrl = userInfo.serverUrl
+            }
+        })
         // Fire all six fetches at once; each row renders as its
         // data arrives. Favourites answers from the local DB.
         for (var i = 0; i < sectionRepeater.model.length; i++) {

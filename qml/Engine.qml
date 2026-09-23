@@ -305,6 +305,35 @@ Item {
         audio.seek(ms)
     }
 
+    // Full playback teardown for logout: stop timers, stop the hub,
+    // clear everything, reset state. The StoppedState echo this
+    // produces lands inside the 400ms window (lastCommitMs) and is
+    // ignored like any other teardown echo. Queue/MiniBar/UI react
+    // through currentSong === null. NO navigation here - the caller
+    // (Main.qml) owns the login switch.
+    function stopEverything() {
+        playWatchdog.stop()
+        watchdogPlayTimer.stop()
+        stopConfirmTimer.stop()
+        eomFallbackTimer.stop()
+        rebuilding = true
+        awaitingStop = false
+        pendingCommit = null
+        seekPending = false
+        warmingUp = false
+        eomArmedIndex = -2
+        audio.stop()
+        hubPlaylist.clear()
+        queue = []
+        queueUrls = []
+        originalQueue = []
+        playerIndex = -1
+        queueStart = 0
+        playing = false
+        lastCommitMs = Date.now()
+        rebuilding = false
+    }
+
     // --- Supervisor watchdog (sonic playWatchdog, album-scale) -----
     // After every play(), check every 1.5s that the position actually
     // advanced. Plain play() on retries 1-2; pause() + 100ms + play()
