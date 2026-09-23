@@ -56,10 +56,32 @@ ListView {
                    ? theme.palette.normal.base : 'transparent'
         }
 
-        Column {
+        Item {
+            id: queueArtSlot
             anchors {
                 left: parent.left
                 leftMargin: units.gu(2)
+                verticalCenter: parent.verticalCenter
+            }
+            width: units.gu(4)
+            height: units.gu(4)
+
+            Image {
+                anchors.centerIn: parent
+                width: units.gu(4)
+                height: units.gu(4)
+                source: modelData.hasArt
+                        ? modelData.imageUrl
+                        : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+            }
+        }
+
+        Column {
+            anchors {
+                left: queueArtSlot.right
+                leftMargin: units.gu(1)
                 right: parent.right
                 rightMargin: units.gu(2)
                 verticalCenter: parent.verticalCenter
@@ -74,7 +96,7 @@ ListView {
 
             Label {
                 width: parent.width
-                text: modelData.artistName
+                text: modelData.artistName + ' - ' + modelData.albumName
                 fontSize: 'small'
                 elide: Text.ElideRight
             }
