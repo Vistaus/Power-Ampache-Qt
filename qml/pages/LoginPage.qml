@@ -38,7 +38,7 @@ Page {
             width: units.gu(14)
             height: units.gu(14)
             anchors.horizontalCenter: parent.horizontalCenter
-            source: Qt.resolvedUrl('../assets/logo.svg')
+            source: Qt.resolvedUrl('../../assets/logo.svg')
             fillMode: Image.PreserveAspectFit
             asynchronous: true
         }

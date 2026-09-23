@@ -466,7 +466,7 @@ Page {
                 }
                 width: artistGridView.cellWidth - units.gu(2)
                 height: width
-                relativeRadius: 0.5
+                relativeRadius: 100
                 backgroundColor: 'transparent'
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
