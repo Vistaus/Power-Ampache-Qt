@@ -476,6 +476,17 @@ Item {
                 engine.playing = false
                 return
             }
+            // b2. Natural end whose settle guards failed (an
+            // in-flight tap/commit or a position-report race): NEVER
+            // advance at the natural end - the queue is over. This
+            // restores the pre-1.0.38 case-c return; without it the
+            // fall-through below could call next() +
+            // playWithWatchdog() during a commit in flight, fighting
+            // the stop-then-commit with watchdog plays.
+            if (engine.repeat === 'off'
+                    && (engine.queueStart + hubPlaylist.currentIndex + 1) >= engine.queue.length) {
+                return
+            }
             // c. Session alive (e.g. repeat reloop) - NEVER fight a
             // live session.
             if (audio.playbackState === MediaPlayer.PlayingState) {
