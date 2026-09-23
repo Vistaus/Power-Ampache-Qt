@@ -81,9 +81,13 @@ def _streamingBitrate():
             row = connection.execute(
                 'SELECT streamingQuality FROM LocalSettingsEntity LIMIT 1'
             ).fetchone()
-            if row is None or not row[0]:
+            if row is None or row[0] is None:
                 return None
-            return int(row[0])
+            quality = int(row[0])
+            # 0 was the pre-1.0.27 "lossless" marker; any non-positive
+            # stored value means "omit the bitrate param" (original
+            # quality).
+            return quality if quality > 0 else None
         finally:
             connection.close()
     except Exception:
@@ -725,7 +729,7 @@ def getAppInfo():
 def getStreamingQuality():
     "Current stored streaming quality; 320 is the default when nothing is stored."
     quality = _streamingBitrate()
-    return {'ok': True, 'quality': quality if quality else 320}
+    return {'ok': True, 'quality': quality if quality is not None else 320}
 
 
 def setStreamingQuality(quality):

@@ -73,8 +73,6 @@ Popover {
 
         ThinDivider {}
 
-        Header { text: i18n.tr('Menu') }
-
         Standard {
             text: i18n.tr('Settings')
             onClicked: {

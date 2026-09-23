@@ -94,6 +94,8 @@ MainView {
         playerPageComponent: playerPageComponent
         playlistDetailPageComponent: playlistDetailPageComponent
         artistPageComponent: artistPageComponent
+        settingsPageComponent: settingsPageComponent
+        aboutPageComponent: aboutPageComponent
         wideMode: root.wideMode
     }
 
@@ -162,12 +164,8 @@ MainView {
             pythonBridge: python
             mainView: root
             albumRowDelegate: albumRowComponent
-            openSettingsCallback: function() {
-                pageLayout.addPageToCurrentColumn(pageLayout.primaryPage, settingsPageComponent)
-            }
-            openAboutCallback: function() {
-                pageLayout.addPageToCurrentColumn(pageLayout.primaryPage, aboutPageComponent)
-            }
+            openSettingsCallback: navBar.openSettings
+            openAboutCallback: navBar.openAbout
         }
     }
     Component { id: albumPageComponent; AlbumPage { pythonBridge: python; playback: engine; formatDuration: root.formatDuration } }

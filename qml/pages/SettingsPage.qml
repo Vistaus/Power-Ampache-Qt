@@ -20,12 +20,10 @@ Page {
     property var pythonBridge
     property var logoutCallback: null
 
-    // 0 = lossless: the bridge omits the bitrate param entirely.
     property var bitrateModel: [
         { label: i18n.tr('Low (96 kbps)'), value: 96 },
         { label: i18n.tr('Medium (192 kbps)'), value: 192 },
-        { label: i18n.tr('High (320 kbps)'), value: 320 },
-        { label: i18n.tr('Lossless (original)'), value: 0 }
+        { label: i18n.tr('High (320 kbps)'), value: 320 }
     ]
     property int currentBitrate: 320
 

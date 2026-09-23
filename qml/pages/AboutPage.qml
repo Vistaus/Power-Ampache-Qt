@@ -89,14 +89,6 @@ Page {
                 text: i18n.tr('GPL-3.0-only')
                 subText: i18n.tr('Free as in Freedom')
             }
-
-            ThinDivider {}
-
-            Header { text: i18n.tr('Quote of the version') }
-            Subtitled {
-                text: i18n.tr('This version is powered by the elliptical galaxy in the Virgo Cluster')
-                subText: ''
-            }
         }
     }
 
