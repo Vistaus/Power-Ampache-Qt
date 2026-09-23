@@ -166,7 +166,10 @@ Page {
                 rightMargin: units.gu(1)
                 verticalCenter: parent.verticalCenter
             }
-            placeholderText: i18n.tr('Search')
+            placeholderText: [i18n.tr('Search Playlists'),
+                              i18n.tr('Search Albums'),
+                              i18n.tr('Search Songs'),
+                              i18n.tr('Search Artists')][libraryHeader.sections.selectedIndex]
             inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
             onTextChanged: {
                 libraryPage.searchQuery = text.trim()
@@ -427,6 +430,7 @@ Page {
                 playback.playFrom([songs[rowIndex]], 0)
             }
             formatDuration: libraryPage.formatDuration
+            showArt: true
         }
     }
 
