@@ -47,7 +47,7 @@ Page {
             id: settingsColumn
             width: settingsFlickable.width
 
-            ListItemHeader { text: i18n.tr('Streaming') }
+            Header { text: i18n.tr('Streaming') }
 
             Repeater {
                 model: settingsPage.bitrateModel
@@ -82,7 +82,7 @@ Page {
                 }
             }
 
-            ListItemHeader { text: i18n.tr('Cache') }
+            Header { text: i18n.tr('Cache') }
 
             Subtitled {
                 text: i18n.tr('Cached library')

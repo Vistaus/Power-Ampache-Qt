@@ -37,14 +37,14 @@ Page {
             id: aboutColumn
             width: aboutFlickable.width
 
-            ListItemHeader { text: i18n.tr('Server') }
+            Header { text: i18n.tr('Server') }
             Subtitled { text: aboutPage.serverUrl; subText: i18n.tr('Server address') }
             Subtitled { text: aboutPage.appVersion; subText: i18n.tr('App version') }
             Subtitled { text: aboutPage.apiVersion; subText: i18n.tr('Ampache API version') }
 
             ThinDivider {}
 
-            ListItemHeader { text: i18n.tr('Support') }
+            Header { text: i18n.tr('Support') }
             Standard {
                 text: i18n.tr('Patreon')
                 onClicked: Qt.openUrlExternally('https://www.patreon.com/Icefields')
@@ -60,7 +60,7 @@ Page {
 
             ThinDivider {}
 
-            ListItemHeader { text: i18n.tr('Links') }
+            Header { text: i18n.tr('Links') }
             Standard {
                 text: i18n.tr('Matrix Space')
                 onClicked: Qt.openUrlExternally('https://matrix.to/#/%23power-ampache:matrix.org')
@@ -84,7 +84,7 @@ Page {
 
             ThinDivider {}
 
-            ListItemHeader { text: i18n.tr('License') }
+            Header { text: i18n.tr('License') }
             Subtitled {
                 text: i18n.tr('GPL-3.0-only')
                 subText: i18n.tr('Free as in Freedom')
@@ -92,7 +92,7 @@ Page {
 
             ThinDivider {}
 
-            ListItemHeader { text: i18n.tr('Quote of the version') }
+            Header { text: i18n.tr('Quote of the version') }
             Subtitled {
                 text: i18n.tr('This version is powered by the elliptical galaxy in the Virgo Cluster')
                 subText: ''

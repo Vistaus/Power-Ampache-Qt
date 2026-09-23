@@ -73,7 +73,7 @@ Popover {
 
         ThinDivider {}
 
-        ListItemHeader { text: i18n.tr('Menu') }
+        Header { text: i18n.tr('Menu') }
 
         Standard {
             text: i18n.tr('Settings')
