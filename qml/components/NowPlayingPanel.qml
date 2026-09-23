@@ -351,12 +351,6 @@ Item {
     }
 
     Component.onCompleted: {
-        // Diagnostic: measured pane height in grid units and the
-        // resulting compact state. Remove after the threshold is
-        // tuned.
-        console.log('nowPlaying: panel height=' + height
-            + ' gu=' + (height / units.gu(1)).toFixed(1)
-            + ' compact=' + compact)
         // (Re)opened with a track already loaded but paused:
         // seed current values so the labels and the progress bar
         // are never blank.

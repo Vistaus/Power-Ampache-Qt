@@ -153,9 +153,13 @@ Flickable {
         Item { width: 1; height: units.gu(2) }
 
         Item {
-            width: Math.min(infoColumn.width, units.gu(30))
+            // Full-bleed cover: spans the whole panel width, edge
+            // to edge. The column only manages vertical layout, so a
+            // wider child with an explicit x is respected; x cancels
+            // the column's 2gu inset to reach the panel's left edge.
+            width: songInfoFlickable.width
+            x: -units.gu(2)
             height: width
-            anchors.horizontalCenter: parent.horizontalCenter
 
             Rectangle {
                 id: infoCoverFrame
