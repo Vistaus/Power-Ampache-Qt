@@ -51,14 +51,14 @@ Page {
 
                 Image {
                     anchors {
-                        right: parent.right
-                        rightMargin: units.gu(2)
+                        left: parent.left
+                        leftMargin: units.gu(2)
                         verticalCenter: parent.verticalCenter
                     }
                     width: units.gu(16)
                     height: units.gu(4.5)
                     fillMode: Image.PreserveAspectFit
-                    source: Qt.resolvedUrl('../../assets/about/banner_patreon.svg')
+                    source: Qt.resolvedUrl('../../assets/about/banner_patreon.png')
                     asynchronous: true
                 }
 
@@ -73,8 +73,8 @@ Page {
 
                 Image {
                     anchors {
-                        right: parent.right
-                        rightMargin: units.gu(2)
+                        left: parent.left
+                        leftMargin: units.gu(2)
                         verticalCenter: parent.verticalCenter
                     }
                     width: units.gu(16)
@@ -95,8 +95,8 @@ Page {
 
                 Image {
                     anchors {
-                        right: parent.right
-                        rightMargin: units.gu(2)
+                        left: parent.left
+                        leftMargin: units.gu(2)
                         verticalCenter: parent.verticalCenter
                     }
                     width: units.gu(16)

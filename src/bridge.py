@@ -29,6 +29,13 @@ _SEARCH_PAGE_SIZE = 500
 
 _threadLocal = threading.local()
 
+# Ids the server reports as having NO art (has_art=0 in the raw
+# payload rows). The art URL is built unconditionally and serves a
+# server-side placeholder image, so artUrl alone can never identify
+# artless rows; this set is rebuilt from payload rows on every fetch.
+# Session memory only: rows never re-fetched default to artful.
+_ARTLESS_IDS = {'album': set(), 'artist': set(), 'playlist': set()}
+
 
 def getDbPath():
     "Return the cache database path inside the XDG data dir."
@@ -68,6 +75,36 @@ def _errorDict(exception):
     else:
         errorKind = 'unknown'
     return {'ok': False, 'errorKind': errorKind, 'message': str(exception)}
+
+
+def _captureHasArt(rows, kind):
+    "Record which payload rows the server says have no art. Ids are normalized to strings (server JSON ids are strings)."
+    if not rows:
+        return
+    for row in rows:
+        objectId = str(row.get('id') or '')
+        if not objectId:
+            continue
+        try:
+            hasArt = int(row.get('has_art') or 1)
+        except (TypeError, ValueError):
+            hasArt = 1
+        if hasArt == 0:
+            _ARTLESS_IDS[kind].add(objectId)
+        else:
+            _ARTLESS_IDS[kind].discard(objectId)
+
+
+def _albumHasArt(albumId):
+    return str(albumId) not in _ARTLESS_IDS['album']
+
+
+def _artistHasArt(artistId):
+    return str(artistId) not in _ARTLESS_IDS['artist']
+
+
+def _playlistHasArt(playlistId):
+    return str(playlistId) not in _ARTLESS_IDS['playlist']
 
 
 def _streamingBitrate():
@@ -152,6 +189,7 @@ def _albumDict(album):
         'artistName': album.artistName,
         'artUrl': album.artUrl,
         'year': album.year,
+        'hasArt': _albumHasArt(album.id),
     }
 
 
@@ -166,6 +204,7 @@ def _songDict(song):
         'albumName': song.albumName,
         'time': song.time,
         'imageUrl': song.imageUrl,
+        'hasArt': _albumHasArt(song.albumId),
     }
 
 
@@ -178,6 +217,7 @@ def _artistDict(artist):
         'songCount': artist.songCount,
         'artUrl': artist.artUrl,
         'flag': artist.flag,
+        'hasArt': _artistHasArt(artist.id),
     }
 
 
@@ -186,6 +226,9 @@ def _albumList(fetcher):
     try:
         client = getClient()
         albums = fetcher(client)
+        # Stats responses carry the album rows; capture their has_art
+        # flags before mapping.
+        _captureHasArt((client.lastPayload or {}).get('album') or [], 'album')
         return {'ok': True, 'albums': [_albumDict(album) for album in albums]}
     except Exception as exception:
         return _errorDict(exception)
@@ -214,6 +257,7 @@ def getFavouriteAlbums():
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -251,9 +295,19 @@ def getPlaylists():
         if not os.path.exists(dbPath):
             return {'ok': True, 'playlists': []}
         client = getClient()
-        # The library auto-paginates and persists every response; the
-        # return value is discarded, the cache DB is the source of truth.
-        client.getPlaylists()
+        # Self-paginated in 500-row pages with short-page termination
+        # (the searchPlaylists shape): a bare list call auto-paginates
+        # and lastPayload keeps ONLY the last page, so has_art capture
+        # would miss rows. The return value is discarded, the cache DB
+        # is the source of truth.
+        offset = 0
+        while True:
+            client.getPlaylists(offset=offset, limit=_SEARCH_PAGE_SIZE)
+            pageRows = (client.lastPayload or {}).get('playlist') or []
+            _captureHasArt(pageRows, 'playlist')
+            if len(pageRows) < _SEARCH_PAGE_SIZE:
+                break
+            offset += _SEARCH_PAGE_SIZE
         connection = sqlite3.connect(dbPath)
         try:
             # Order: highest rated, flagged, owned by the logged-in user, smart playlists last, then insertion order.
@@ -272,6 +326,7 @@ def getPlaylists():
                     'items': row[3],
                     'type': row[4],
                     'artUrl': row[5],
+                    'hasArt': _playlistHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -290,6 +345,7 @@ def getAlbumsPage(offset, limit=100):
         # page; the true page size comes from lastPayload.
         client.getAlbums(offset=offset, limit=limit)
         pageRows = (client.lastPayload or {}).get('album') or []
+        _captureHasArt(pageRows, 'album')
         connection = sqlite3.connect(getDbPath())
         try:
             cursor = connection.execute(
@@ -303,6 +359,7 @@ def getAlbumsPage(offset, limit=100):
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -321,6 +378,7 @@ def getArtistsPage(offset, limit=100):
         # The return value is the full cache read-back, not the server
         # page; the true page size comes from lastPayload.
         pageRows = (client.lastPayload or {}).get('artist') or []
+        _captureHasArt(pageRows, 'artist')
         albumArtists = [artist for artist in artists if artist.albumCount > 0]
         return {
             'ok': True,
@@ -362,6 +420,9 @@ def getArtistAlbums(artistId):
         # include='albums' persists the artist's albums; the return
         # value is discarded, the cache DB is the source of truth.
         client.getArtist(artistId, include='albums')
+        # The include payload nests the artist's albums under the same
+        # 'album' key; capture their has_art flags.
+        _captureHasArt((client.lastPayload or {}).get('album') or [], 'album')
         connection = sqlite3.connect(dbPath)
         try:
             cursor = connection.execute(
@@ -377,6 +438,7 @@ def getArtistAlbums(artistId):
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -408,6 +470,7 @@ def searchPlaylists(query):
         while True:
             client.getPlaylists(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
             pageRows = (client.lastPayload or {}).get('playlist') or []
+            _captureHasArt(pageRows, 'playlist')
             for pageRow in pageRows:
                 matchedIds.add(str(pageRow.get('id')))
             if len(pageRows) < _SEARCH_PAGE_SIZE:
@@ -435,6 +498,7 @@ def searchPlaylists(query):
                     'items': row[3],
                     'type': row[4],
                     'artUrl': row[5],
+                    'hasArt': _playlistHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds
@@ -457,6 +521,7 @@ def searchAlbums(query):
         while True:
             client.getAlbums(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
             pageRows = (client.lastPayload or {}).get('album') or []
+            _captureHasArt(pageRows, 'album')
             for pageRow in pageRows:
                 matchedIds.add(str(pageRow.get('id')))
             if len(pageRows) < _SEARCH_PAGE_SIZE:
@@ -479,6 +544,7 @@ def searchAlbums(query):
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds
@@ -524,6 +590,7 @@ def searchSongs(query):
                     'albumName': row[5],
                     'time': row[6],
                     'imageUrl': row[7],
+                    'hasArt': _albumHasArt(row[4]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds
@@ -546,6 +613,7 @@ def searchArtists(query):
         while True:
             client.getArtists(albumArtist=1, filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
             pageRows = (client.lastPayload or {}).get('artist') or []
+            _captureHasArt(pageRows, 'artist')
             for pageRow in pageRows:
                 matchedIds.add(str(pageRow.get('id')))
             if len(pageRows) < _SEARCH_PAGE_SIZE:
@@ -567,6 +635,7 @@ def searchArtists(query):
                     'songCount': row[3],
                     'artUrl': row[4],
                     'flag': row[5],
+                    'hasArt': _artistHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds and row[2] > 0

@@ -105,18 +105,8 @@ Item {
 
             Image {
                 anchors.fill: parent
-                source: playback.currentSong !== null ? playback.currentSong.imageUrl : ''
-                visible: playback.currentSong !== null && playback.currentSong.imageUrl !== ''
+                source: playback.currentSong !== null && playback.currentSong.hasArt ? playback.currentSong.imageUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                 fillMode: Image.PreserveAspectFit
-                asynchronous: true
-            }
-
-            Image {
-                anchors.centerIn: parent
-                width: Math.max(units.gu(4), Math.min(units.gu(8), coverSquare.width / 3))
-                height: width
-                source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
-                visible: playback.currentSong === null || playback.currentSong.imageUrl === ''
                 asynchronous: true
             }
         }

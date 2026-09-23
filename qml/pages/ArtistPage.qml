@@ -56,16 +56,7 @@ Page {
                 backgroundColor: theme.palette.normal.base
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
-                    source: modelData.artUrl || ''
-                    asynchronous: true
-                }
-
-                Image {
-                    anchors.centerIn: parent
-                    width: units.gu(3)
-                    height: units.gu(3)
-                    source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
-                    visible: !modelData.artUrl
+                    source: modelData.hasArt ? modelData.artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     asynchronous: true
                 }
             }

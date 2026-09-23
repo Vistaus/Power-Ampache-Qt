@@ -28,18 +28,8 @@ Item {
 
         Image {
             anchors.fill: parent
-            source: artUrl
-            visible: artUrl !== ''
+            source: hasArt ? artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
             fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-        }
-
-        Image {
-            anchors.centerIn: parent
-            width: units.gu(6)
-            height: units.gu(6)
-            source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
-            visible: artUrl === ''
             asynchronous: true
         }
     }
