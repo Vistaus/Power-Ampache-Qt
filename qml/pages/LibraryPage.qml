@@ -266,12 +266,13 @@ Page {
                     asynchronous: true
                 }
 
-                Icon {
+                Image {
                     anchors.centerIn: parent
                     width: units.gu(3)
                     height: units.gu(3)
-                    name: 'view-list-symbolic'
+                    source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     visible: !modelData.artUrl
+                    asynchronous: true
                 }
             }
 
@@ -351,6 +352,15 @@ Page {
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
                     source: modelData.artUrl || ''
+                    asynchronous: true
+                }
+
+                Image {
+                    anchors.centerIn: parent
+                    width: units.gu(3)
+                    height: units.gu(3)
+                    source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
+                    visible: !modelData.artUrl
                     asynchronous: true
                 }
             }
@@ -479,6 +489,15 @@ Page {
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
                     source: modelData.artUrl || ''
+                    asynchronous: true
+                }
+
+                Image {
+                    anchors.centerIn: parent
+                    width: units.gu(3)
+                    height: units.gu(3)
+                    source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
+                    visible: !modelData.artUrl
                     asynchronous: true
                 }
             }

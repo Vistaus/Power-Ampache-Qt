@@ -45,37 +45,199 @@ Page {
             ThinDivider {}
 
             Header { text: i18n.tr('Support') }
-            Standard {
-                text: i18n.tr('Patreon')
-                onClicked: Qt.openUrlExternally('https://www.patreon.com/Icefields')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Image {
+                    anchors {
+                        right: parent.right
+                        rightMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: units.gu(16)
+                    height: units.gu(4.5)
+                    fillMode: Image.PreserveAspectFit
+                    source: Qt.resolvedUrl('../../assets/about/banner_patreon.svg')
+                    asynchronous: true
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://www.patreon.com/Icefields')
+                }
             }
-            Standard {
-                text: i18n.tr('Buy Me a Coffee')
-                onClicked: Qt.openUrlExternally('https://buymeacoffee.com/powerampache')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Image {
+                    anchors {
+                        right: parent.right
+                        rightMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: units.gu(16)
+                    height: units.gu(4.5)
+                    fillMode: Image.PreserveAspectFit
+                    source: Qt.resolvedUrl('../../assets/about/bmc-brand-logo-button.png')
+                    asynchronous: true
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://buymeacoffee.com/powerampache')
+                }
             }
-            Standard {
-                text: i18n.tr('PayPal')
-                onClicked: Qt.openUrlExternally('https://paypal.me/powerampache')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Image {
+                    anchors {
+                        right: parent.right
+                        rightMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: units.gu(16)
+                    height: units.gu(4.5)
+                    fillMode: Image.PreserveAspectFit
+                    source: Qt.resolvedUrl('../../assets/about/paypal.png')
+                    asynchronous: true
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://paypal.me/powerampache')
+                }
             }
 
             ThinDivider {}
 
             Header { text: i18n.tr('Links') }
-            Standard {
-                text: i18n.tr('Matrix Space')
-                onClicked: Qt.openUrlExternally('https://matrix.to/#/%23power-ampache:matrix.org')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Row {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: units.gu(1.5)
+
+                    Image {
+                        width: units.gu(2.5)
+                        height: units.gu(2.5)
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: Qt.resolvedUrl('../../assets/about/matrix.png')
+                        asynchronous: true
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: i18n.tr('Matrix Space')
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://matrix.to/#/%23power-ampache:matrix.org')
+                }
             }
-            Standard {
-                text: i18n.tr('Telegram')
-                onClicked: Qt.openUrlExternally('https://t.me/PowerAmpache')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Row {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: units.gu(1.5)
+
+                    Image {
+                        width: units.gu(2.5)
+                        height: units.gu(2.5)
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: Qt.resolvedUrl('../../assets/about/ic_telegram.svg')
+                        asynchronous: true
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: i18n.tr('Telegram')
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://t.me/PowerAmpache')
+                }
             }
-            Standard {
-                text: i18n.tr('Telegram chat')
-                onClicked: Qt.openUrlExternally('https://t.me/PowerAmpache2')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Row {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: units.gu(1.5)
+
+                    Image {
+                        width: units.gu(2.5)
+                        height: units.gu(2.5)
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: Qt.resolvedUrl('../../assets/about/ic_telegram.svg')
+                        asynchronous: true
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: i18n.tr('Telegram chat')
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://t.me/PowerAmpache2')
+                }
             }
-            Standard {
-                text: i18n.tr('Mastodon')
-                onClicked: Qt.openUrlExternally('https://floss.social/@powerampache')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Row {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: units.gu(1.5)
+
+                    Image {
+                        width: units.gu(2.5)
+                        height: units.gu(2.5)
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: Qt.resolvedUrl('../../assets/about/ic_mastodon.svg')
+                        asynchronous: true
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: i18n.tr('Mastodon')
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://floss.social/@powerampache')
+                }
             }
             Standard {
                 text: i18n.tr('Source code (GitHub)')

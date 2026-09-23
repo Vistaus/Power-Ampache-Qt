@@ -111,12 +111,13 @@ Item {
                 asynchronous: true
             }
 
-            Icon {
+            Image {
                 anchors.centerIn: parent
                 width: Math.max(units.gu(4), Math.min(units.gu(8), coverSquare.width / 3))
                 height: width
-                name: 'stock_music'
+                source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                 visible: playback.currentSong === null || playback.currentSong.imageUrl === ''
+                asynchronous: true
             }
         }
     }

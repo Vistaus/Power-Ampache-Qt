@@ -174,12 +174,13 @@ Flickable {
                     asynchronous: true
                 }
 
-                Icon {
+                Image {
                     anchors.centerIn: parent
                     width: units.gu(8)
                     height: units.gu(8)
-                    name: 'stock_music'
+                    source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     visible: playback.currentSong === null || playback.currentSong.imageUrl === ''
+                    asynchronous: true
                 }
             }
         }

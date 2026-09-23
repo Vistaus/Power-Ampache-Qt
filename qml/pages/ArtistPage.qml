@@ -59,6 +59,15 @@ Page {
                     source: modelData.artUrl || ''
                     asynchronous: true
                 }
+
+                Image {
+                    anchors.centerIn: parent
+                    width: units.gu(3)
+                    height: units.gu(3)
+                    source: Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
+                    visible: !modelData.artUrl
+                    asynchronous: true
+                }
             }
 
             Label {
