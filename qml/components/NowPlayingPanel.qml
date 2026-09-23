@@ -101,7 +101,7 @@ Item {
             width: Math.min(coverArea.width, coverArea.height) - units.gu(4)
             height: width
             anchors.centerIn: parent
-            color: theme.palette.normal.base
+            color: 'transparent'
 
             Image {
                 anchors.fill: parent

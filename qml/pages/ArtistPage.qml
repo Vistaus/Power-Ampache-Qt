@@ -53,7 +53,7 @@ Page {
                 width: artistAlbumGridView.cellWidth - units.gu(2)
                 height: width
                 radius: 'small'
-                backgroundColor: theme.palette.normal.base
+                backgroundColor: 'transparent'
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
                     source: modelData.hasArt ? modelData.artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')

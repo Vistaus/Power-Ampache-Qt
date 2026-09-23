@@ -164,7 +164,7 @@ Flickable {
             Rectangle {
                 id: infoCoverFrame
                 anchors.fill: parent
-                color: theme.palette.normal.base
+                color: 'transparent'
 
                 Image {
                     anchors.fill: parent

@@ -24,7 +24,7 @@ Item {
             top: parent.top
         }
         height: width
-        color: theme.palette.normal.base
+        color: 'transparent'
 
         Image {
             anchors.fill: parent

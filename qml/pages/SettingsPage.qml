@@ -27,6 +27,7 @@ Page {
         { label: i18n.tr('Lossless (original)'), value: 0 }
     ]
     property int currentBitrate: 0
+    property bool artworkSwitchReady: false
 
     header: PageHeader { id: pageHeader; title: i18n.tr('Settings') }
 
@@ -77,6 +78,52 @@ Page {
                         radius: width / 2
                         visible: settingsPage.currentBitrate === modelData.value
                         color: theme.palette.normal.baseText
+                    }
+                }
+            }
+
+            Header { text: i18n.tr('Artwork') }
+
+            Item {
+                width: parent.width
+                height: units.gu(8)
+
+                Column {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: units.gu(0.5)
+
+                    Label { text: i18n.tr('Use server placeholder art') }
+                    Label {
+                        text: i18n.tr('Switch on if your server provides a custom placeholder art')
+                        fontSize: 'small'
+                        opacity: 0.7
+                    }
+                }
+
+                Switch {
+                    id: serverPlaceholderSwitch
+                    anchors {
+                        right: parent.right
+                        rightMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    onCheckedChanged: {
+                        // Load-time assignment must not fire a save;
+                        // the ready gate separates load from user taps.
+                        if (settingsPage.artworkSwitchReady) {
+                            settingsPage.pythonBridge.call(
+                                'bridge.setServerPlaceholderSetting',
+                                [checked], function(result) {
+                                    if (!result || !result.ok) {
+                                        console.log('settings: save failed: '
+                                                    + (result ? result.message : 'null'))
+                                    }
+                                })
+                        }
                     }
                 }
             }
@@ -161,6 +208,12 @@ Page {
         pythonBridge.call('bridge.getStreamingQuality', [], function(result) {
             if (result && result.ok) {
                 currentBitrate = result.quality
+            }
+        })
+        pythonBridge.call('bridge.getServerPlaceholderSetting', [], function(result) {
+            if (result && result.ok) {
+                serverPlaceholderSwitch.checked = result.enabled
+                settingsPage.artworkSwitchReady = true
             }
         })
         loadCacheStats()

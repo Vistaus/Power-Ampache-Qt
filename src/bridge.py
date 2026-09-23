@@ -36,6 +36,30 @@ _threadLocal = threading.local()
 # Session memory only: rows never re-fetched default to artful.
 _ARTLESS_IDS = {'album': set(), 'artist': set(), 'playlist': set()}
 
+# App-owned settings (settings.json beside the cache DB; the Room
+# schema is read-only and LocalSettingsEntity has no column with
+# matching semantics). None = not read yet; the dict is cached and
+# mutated in place so setters stay coherent.
+_appSettings = None
+
+
+def _getAppSettings():
+    "Read settings.json from the app data dir; a missing or corrupt file means empty settings."
+    global _appSettings
+    if _appSettings is None:
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        try:
+            with open(settingsPath, 'r') as settingsFile:
+                _appSettings = json.load(settingsFile)
+        except (OSError, ValueError):
+            _appSettings = {}
+    return _appSettings
+
+
+def _useServerPlaceholder():
+    "True when the user chose the server's own placeholder art over the app fallback."
+    return bool(_getAppSettings().get('useServerPlaceholder'))
+
 
 def getDbPath():
     "Return the cache database path inside the XDG data dir."
@@ -107,15 +131,15 @@ def _captureHasArt(rows, kind):
 
 
 def _albumHasArt(albumId):
-    return str(albumId) not in _ARTLESS_IDS['album']
+    return _useServerPlaceholder() or str(albumId) not in _ARTLESS_IDS['album']
 
 
 def _artistHasArt(artistId):
-    return str(artistId) not in _ARTLESS_IDS['artist']
+    return _useServerPlaceholder() or str(artistId) not in _ARTLESS_IDS['artist']
 
 
 def _playlistHasArt(playlistId):
-    return str(playlistId) not in _ARTLESS_IDS['playlist']
+    return _useServerPlaceholder() or str(playlistId) not in _ARTLESS_IDS['playlist']
 
 
 def _streamingBitrate():
@@ -846,6 +870,23 @@ def setStreamingQuality(quality):
             connection.commit()
         finally:
             connection.close()
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getServerPlaceholderSetting():
+    "Current 'Use server placeholder art' value; off (False) by default."
+    return {'ok': True, 'enabled': _useServerPlaceholder()}
+
+
+def setServerPlaceholderSetting(enabled):
+    "Persist the 'Use server placeholder art' choice in settings.json (cached dict updated in place, so the change applies to every later dict build without restart)."
+    try:
+        _getAppSettings()['useServerPlaceholder'] = bool(enabled)
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(_getAppSettings(), settingsFile)
         return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)
