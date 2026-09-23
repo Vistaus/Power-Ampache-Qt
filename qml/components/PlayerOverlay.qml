@@ -56,7 +56,7 @@ Item {
         releaseAnimation.restart()
         // Refresh lyrics if the Lyrics section was left open: the
         // song may have changed while the overlay was collapsed.
-        if (overlayHeader.sections.selectedIndex === 2) {
+        if (overlayHeader.sections.selectedIndex === 3) {
             loadLyrics()
         }
     }
@@ -205,17 +205,20 @@ Item {
     // restore it afterwards and never leave it pointing past the end.
     function setLyricsSection(present) {
         var model = overlayHeader.sections.model
-        var hasLyrics = model.length > 2
+        var hasLyrics = model.length > 3
         if (present === hasLyrics) {
             return
         }
         var selected = overlayHeader.sections.selectedIndex
         if (present) {
-            overlayHeader.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Lyrics')]
+            // Lyrics is the dynamic tail at index 3; adding it never
+            // disturbs the static indices 0-2.
+            overlayHeader.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Info'), i18n.tr('Lyrics')]
         } else {
-            overlayHeader.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue')]
-            if (selected > 1) {
-                selected = 0
+            overlayHeader.sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Info')]
+            if (selected > 2) {
+                // Was on Lyrics (3); land on Info (2), not root.
+                selected = 2
             }
         }
         overlayHeader.sections.selectedIndex = selected
@@ -268,7 +271,7 @@ Item {
             // (PlayerPage semantics: sections is read-only, so
             // populate the model at completion).
             Component.onCompleted: {
-                sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue')]
+                sections.model = [i18n.tr('Now Playing'), i18n.tr('Queue'), i18n.tr('Info')]
             }
         }
 
@@ -306,6 +309,23 @@ Item {
         // Lyrics section.
         LyricsPanel {
             id: lyricsPanel
+            overlayRoot: overlayRoot
+            anchors {
+                top: overlayHeader.bottom
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+            visible: overlayHeader.sections.selectedIndex === 3
+        }
+
+        // Song info section (static index 2; Lyrics is the dynamic
+        // tail at index 3).
+        SongInfoPanel {
+            id: songInfoPanel
+            playback: overlayRoot.playback
+            pythonBridge: overlayRoot.pythonBridge
+            formatDuration: overlayRoot.formatDuration
             overlayRoot: overlayRoot
             anchors {
                 top: overlayHeader.bottom
@@ -388,7 +408,7 @@ Item {
     Connections {
         target: overlayHeader.sections
         onSelectedIndexChanged: {
-            if (overlayHeader.sections.selectedIndex === 2) {
+            if (overlayHeader.sections.selectedIndex === 3) {
                 overlayRoot.loadLyrics()
             }
         }
@@ -399,7 +419,7 @@ Item {
         onCurrentSongChanged: {
             // Visible-only lyrics reload: a collapsed overlay skips
             // the fetch; reopening refreshes via open().
-            if (overlayHeader.sections.selectedIndex === 2
+            if (overlayHeader.sections.selectedIndex === 3
                     && overlayPanel.state === "expanded") {
                 overlayRoot.loadLyrics()
             }
