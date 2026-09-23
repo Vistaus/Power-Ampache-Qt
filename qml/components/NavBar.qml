@@ -111,7 +111,12 @@ Item {
                 if (status === Component.Ready) {
                     libraryMountRetries = 0
                     libraryPageInstance = incubator.object
-                    libraryBirthWide = true
+                    // Reflect the CURRENT layout: if a shrink happened
+                    // while this incubation was in flight, the page is
+                    // being re-homed into column 0 and must count as
+                    // single-born or the next grow breaks (blank
+                    // column 1).
+                    libraryBirthWide = wideMode
                     incubator.object.Component.destruction.connect(function() {
                         libraryPageInstance = null
                         libraryBirthWide = false
@@ -486,6 +491,29 @@ Item {
     onWideModeChanged: {
         if (wideMode) {
             migrateToTwoColumns()
+        } else {
+            // Shrink into single-column: APL clamps column-1 wrappers
+            // into column 0 (re-home, not hide). Locked design: the
+            // portrait player is the overlay - remove the page. The
+            // wide-born Library and Album pages get RE-MARKED as
+            // single-born so the next grow's migrateToTwoColumns()
+            // removes and reopens them properly (they now live in the
+            // column-0 subtree, exactly like natively single-born
+            // pages). Without this, migrate skips them (birthWide) and
+            // maybeMountLibrary refuses (instance !== null) -> the
+            // right column stays blank after rotation.
+            if (playerPageInstance !== null) {
+                console.log('navBar: shrink, removing player page (portrait player is the overlay)')
+                pageLayout.removePages(playerPageInstance)
+            }
+            if (libraryPageInstance !== null && libraryBirthWide) {
+                console.log('navBar: shrink, re-home library -> single-born')
+                libraryBirthWide = false
+            }
+            if (albumPageInstance !== null && albumBirthWide) {
+                console.log('navBar: shrink, re-home album -> single-born')
+                albumBirthWide = false
+            }
         }
         maybeMountLibrary()
     }

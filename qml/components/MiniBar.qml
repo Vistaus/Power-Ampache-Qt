@@ -17,6 +17,9 @@ Rectangle {
     property var openPlayerCallback
     // Injected from Main.qml; null keeps the bar usable standalone.
     property var navBar: null
+    // Player overlay handle wiring (single-column mode). null keeps
+    // the bar standalone with tap-only behavior.
+    property var overlayHandle: null
 
     visible: playback.currentSong !== null
     anchors {
@@ -54,16 +57,64 @@ Rectangle {
         }
     }
 
-    // Tap target that opens the player page: everything left of the
-    // controls.
+    // Tap target + drag handle: everything left of the controls.
+    // Tap = openPlayerCallback (overlay toggle in single-column
+    // mode, page player in wide mode). Drag = the panel follows the
+    // finger via the injected overlayHandle; a real drag suppresses
+    // onClicked, so tap and drag never double-fire. The release
+    // reports the sampled drag direction (Contacts pattern: 2gu
+    // sampling) so the overlay can close on ANY downward drag from
+    // the open state.
     MouseArea {
+        preventStealing: true
         anchors {
             left: parent.left
             top: parent.top
             bottom: parent.bottom
             right: miniBarControls.left
         }
-        onClicked: openPlayerCallback()
+        property real previousY: -1
+        property string dragDirection: 'None'
+        drag {
+            axis: Drag.YAxis
+            target: miniBar.overlayHandle !== null && miniBar.overlayHandle.enabled
+                    ? miniBar.overlayHandle.dragTarget : null
+            minimumY: 0
+            maximumY: miniBar.overlayHandle !== null && miniBar.overlayHandle.enabled
+                      ? miniBar.overlayHandle.dragMaxY : 0
+        }
+        onPressed: {
+            console.log('miniBar: handle pressed y=' + mouse.y)
+            previousY = mouse.y
+            dragDirection = 'None'
+            if (miniBar.overlayHandle !== null) {
+                miniBar.overlayHandle.handlePressed()
+            }
+        }
+        onPositionChanged: {
+            // 2gu sampling: small jitters never count as direction.
+            if (previousY < 0) {
+                return
+            }
+            var yOffset = previousY - mouse.y
+            if (Math.abs(yOffset) <= units.gu(2)) {
+                return
+            }
+            previousY = mouse.y
+            dragDirection = yOffset > 0 ? 'BottomToTop' : 'TopToBottom'
+        }
+        onReleased: {
+            console.log('miniBar: handle released direction=' + dragDirection)
+            if (miniBar.overlayHandle !== null) {
+                miniBar.overlayHandle.handleReleased(dragDirection)
+            }
+            previousY = -1
+            dragDirection = 'None'
+        }
+        onClicked: {
+            console.log('miniBar: handle clicked (tap)')
+            openPlayerCallback()
+        }
     }
 
     Row {

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-21 16:34+0000\n"
+"POT-Creation-Date: 2026-09-22 20:05+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,20 +17,135 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:122
+#: ../qml/Main.qml:134
 msgid "Internal error"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:424
+#: ../qml/components/NavBar.qml:429
 msgid "Home"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:439 ../qml/pages/LibraryPage.qml:138
+#: ../qml/components/NavBar.qml:444 ../qml/pages/LibraryPage.qml:138
 msgid "Library"
 msgstr ""
 
 #: ../qml/components/OfflineBanner.qml:17
 msgid "Offline - showing cached music"
+msgstr ""
+
+#: ../qml/components/PlayerOverlay.qml:216
+#: ../qml/components/PlayerOverlay.qml:218
+#: ../qml/components/PlayerOverlay.qml:274 ../qml/pages/PlayerPage.qml:46
+#: ../qml/pages/PlayerPage.qml:82 ../qml/pages/PlayerPage.qml:84
+msgid "Info"
+msgstr ""
+
+#: ../qml/components/PlayerOverlay.qml:216 ../qml/pages/PlayerPage.qml:82
+msgid "Lyrics"
+msgstr ""
+
+#: ../qml/components/PlayerOverlay.qml:216
+#: ../qml/components/PlayerOverlay.qml:218
+#: ../qml/components/PlayerOverlay.qml:263
+#: ../qml/components/PlayerOverlay.qml:274 ../qml/pages/PlayerPage.qml:31
+#: ../qml/pages/PlayerPage.qml:46 ../qml/pages/PlayerPage.qml:82
+#: ../qml/pages/PlayerPage.qml:84
+msgid "Now Playing"
+msgstr ""
+
+#: ../qml/components/PlayerOverlay.qml:216
+#: ../qml/components/PlayerOverlay.qml:218
+#: ../qml/components/PlayerOverlay.qml:274 ../qml/pages/PlayerPage.qml:46
+#: ../qml/pages/PlayerPage.qml:82 ../qml/pages/PlayerPage.qml:84
+msgid "Queue"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:76
+msgid "Title"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:77
+msgid "Artist"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:78
+msgid "Album"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:79
+msgid "Album artist"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:80
+msgid "Genre"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:82
+msgid "Year"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:85
+msgid "Track"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:88
+msgid "Disk"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:91
+msgid "Duration"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:95
+msgid "Bitrate"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:98
+msgid "Sample rate"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:101
+msgid "Channels"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:106
+msgid "File size"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:108
+msgid "Format"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:109
+msgid "Composer"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:111
+msgid "Play count"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:114
+msgid "Rating"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:116
+msgid "Language"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:117
+msgid "Comment"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:118
+msgid "Publisher"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:119
+msgid "MusicBrainz ID"
+msgstr ""
+
+#: ../qml/components/SongInfoPanel.qml:123
+msgid "Replay gain"
 msgstr ""
 
 #: ../qml/pages/AlbumPage.qml:41 ../qml/pages/PlayerPage.qml:36
@@ -145,18 +260,4 @@ msgstr ""
 
 #: ../qml/pages/LoginPage.qml:97
 msgid "Connection failed"
-msgstr ""
-
-#: ../qml/pages/PlayerPage.qml:31 ../qml/pages/PlayerPage.qml:46
-#: ../qml/pages/PlayerPage.qml:80 ../qml/pages/PlayerPage.qml:82
-msgid "Now Playing"
-msgstr ""
-
-#: ../qml/pages/PlayerPage.qml:46 ../qml/pages/PlayerPage.qml:80
-#: ../qml/pages/PlayerPage.qml:82
-msgid "Queue"
-msgstr ""
-
-#: ../qml/pages/PlayerPage.qml:80
-msgid "Lyrics"
 msgstr ""

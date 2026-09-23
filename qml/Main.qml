@@ -74,7 +74,8 @@ MainView {
         id: miniBar
         playback: engine
         navBar: navBar
-        openPlayerCallback: function() { navBar.openPlayer() }
+        overlayHandle: playerOverlay
+        openPlayerCallback: function() { playerOverlay.tapAction() }
     }
 
     NavBar {
@@ -88,6 +89,17 @@ MainView {
         playlistDetailPageComponent: playlistDetailPageComponent
         artistPageComponent: artistPageComponent
         wideMode: root.wideMode
+    }
+
+    PlayerOverlay {
+        id: playerOverlay
+        miniBar: miniBar
+        navBar: navBar
+        playback: engine
+        pythonBridge: python
+        audioEngine: engine.audioElement
+        formatDuration: root.formatDuration
+        enabled: root.wideModeAllowed && !root.wideMode
     }
 
     Python {

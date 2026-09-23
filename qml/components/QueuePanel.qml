@@ -13,6 +13,35 @@ ListView {
     id: queueListView
 
     property var playback
+    property var overlayRoot
+
+    // Pull-to-dismiss wiring: forward top-overshoot to the overlay
+    // sheet (PlayerOverlay overscrollPull/Release/Retract). Dragging
+    // down while already at the top drags the sheet instead; normal
+    // scrolling is untouched.
+    boundsBehavior: Flickable.DragAndOvershootBounds
+    onContentYChanged: {
+        if (!overlayRoot) {
+            return
+        }
+        if (contentY < 0) {
+            overlayRoot.overscrollPull(-contentY)
+        } else {
+            overlayRoot.overscrollRetract()
+        }
+    }
+    onDraggingChanged: {
+        if (!dragging && overlayRoot) {
+            overlayRoot.overscrollRelease(contentY < 0 ? -contentY : 0)
+        }
+    }
+    onMovementEnded: {
+        // Safety net: if the dragging signal never fired (platform
+        // quirk), the rebound's end still settles a followed sheet.
+        if (overlayRoot && contentY >= 0) {
+            overlayRoot.overscrollRelease(0)
+        }
+    }
 
     clip: true
     model: playback.queue
