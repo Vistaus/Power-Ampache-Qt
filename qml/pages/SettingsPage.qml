@@ -26,7 +26,7 @@ Page {
         { label: i18n.tr('High (320 kbps)'), value: 320 },
         { label: i18n.tr('Lossless (original)'), value: 0 }
     ]
-    property int currentBitrate: 320
+    property int currentBitrate: 0
 
     header: PageHeader { id: pageHeader; title: i18n.tr('Settings') }
 
@@ -145,20 +145,12 @@ Page {
         })
     }
 
-    function formatBytes(bytes) {
-        if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB'
-        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB'
-        if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB'
-        return bytes + ' B'
-    }
-
     function loadCacheStats() {
         pythonBridge.call('bridge.getCacheStats', [], function(result) {
             if (result && result.ok) {
                 cacheStatsText = result.songs + ' ' + i18n.tr('songs')
                     + ' · ' + result.albums + ' ' + i18n.tr('albums')
                     + ' · ' + result.artists + ' ' + i18n.tr('artists')
-                    + ' · ' + formatBytes(result.totalSize)
             } else {
                 cacheStatsText = i18n.tr('Unavailable')
             }

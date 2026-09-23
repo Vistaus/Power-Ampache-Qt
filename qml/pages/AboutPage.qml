@@ -66,7 +66,7 @@ Page {
                 onClicked: Qt.openUrlExternally('https://matrix.to/#/%23power-ampache:matrix.org')
             }
             Standard {
-                text: i18n.tr('Telegram (announcements)')
+                text: i18n.tr('Telegram')
                 onClicked: Qt.openUrlExternally('https://t.me/PowerAmpache')
             }
             Standard {

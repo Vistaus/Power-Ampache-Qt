@@ -727,18 +727,18 @@ def getAppInfo():
 
 
 def getStreamingQuality():
-    "Current stored streaming quality, RAW: 0 = lossless (original quality), 320 is the default when nothing is stored. Must NOT reuse _streamingBitrate - it maps the stored 0 to None for URL building, and this function must tell 'nothing stored' (320) apart from 'lossless stored' (0) so the UI keeps the Lossless row selected."
+    "Current stored streaming quality, RAW: 0 = lossless (original quality). ORIGINAL QUALITY (0) is the default when nothing is stored — a fresh install must not force a transcode; the schema column default (320) is not consulted. Must NOT reuse _streamingBitrate - it maps the stored 0 to None for URL building, and this function must tell 'nothing stored' (0 default) apart from '0 stored' (also 0, same UI outcome) while never collapsing to 320."
     try:
         dbPath = getDbPath()
         if not os.path.exists(dbPath):
-            return {'ok': True, 'quality': 320}
+            return {'ok': True, 'quality': 0}
         connection = sqlite3.connect(dbPath)
         try:
             row = connection.execute(
                 'SELECT streamingQuality FROM LocalSettingsEntity LIMIT 1'
             ).fetchone()
             if row is None or row[0] is None:
-                return {'ok': True, 'quality': 320}
+                return {'ok': True, 'quality': 0}
             return {'ok': True, 'quality': int(row[0])}
         finally:
             connection.close()
