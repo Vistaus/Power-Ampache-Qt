@@ -56,6 +56,7 @@ Page {
         id: playlistInfoColumn
         anchors {
             top: playlistDetailHeader.bottom
+            topMargin: units.gu(0.5)
             left: parent.left
             right: parent.right
         }
@@ -85,21 +86,10 @@ Page {
                 width: units.gu(4)
                 height: units.gu(4)
 
-                Label {
+                HeartButton {
                     anchors.centerIn: parent
-                    // Text glyph, not an icon theme lookup. Unliked =
-                    // baseText, liked = negative (red). One glyph for
-                    // both states - the color carries the state.
-                    text: '♥\uFE0E'
-                    fontSize: 'x-large'
-                    color: playlistDetailPage.playlistFlag
-                           ? theme.palette.normal.negative
-                           : theme.palette.normal.baseText
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
+                    liked: playlistDetailPage.playlistFlag
+                    onToggled: {
                         var newFlag = !playlistDetailPage.playlistFlag
                         playlistDetailPage.pythonBridge.call('bridge.flagPlaylist',
                             [playlistDetailPage.playlistId, newFlag], function(result) {

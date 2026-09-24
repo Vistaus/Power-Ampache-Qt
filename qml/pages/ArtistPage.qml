@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import "../components"
 
 // Artist drill-down, header redesigned after the PA2 artist screen:
 // fixed header = scrollable genre chips, song count + like (flag)
@@ -119,21 +120,10 @@ Page {
                 width: units.gu(4)
                 height: units.gu(4)
 
-                Label {
+                HeartButton {
                     anchors.centerIn: parent
-                    // Text glyph, not an icon theme lookup. Unliked =
-                    // baseText, liked = negative (red). One glyph for
-                    // both states - the color carries the state.
-                    text: '♥\uFE0E'
-                    fontSize: 'x-large'
-                    color: artistPage.artistFlag
-                           ? theme.palette.normal.negative
-                           : theme.palette.normal.baseText
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
+                    liked: artistPage.artistFlag
+                    onToggled: {
                         var newFlag = !artistPage.artistFlag
                         artistPage.pythonBridge.call('bridge.flagArtist',
                             [artistPage.artistId, newFlag], function(result) {
