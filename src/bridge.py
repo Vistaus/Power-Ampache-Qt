@@ -972,15 +972,17 @@ def getArtistInfo(artistId):
     try:
         dbPath = getDbPath()
         if not os.path.exists(dbPath):
-            return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False}
+            return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False,
+                    'artUrl': '', 'hasArt': False}
         connection = sqlite3.connect(dbPath)
         try:
             row = connection.execute(
-                'SELECT songCount, genre, flag FROM ArtistEntity WHERE id = ?',
+                'SELECT songCount, genre, flag, artUrl FROM ArtistEntity WHERE id = ?',
                 (str(artistId),)
             ).fetchone()
             if row is None:
-                return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False}
+                return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False,
+                        'artUrl': '', 'hasArt': False}
             genres = []
             try:
                 parsed = json.loads(row[1])
@@ -989,7 +991,8 @@ def getArtistInfo(artistId):
             except (ValueError, TypeError):
                 pass
             return {'ok': True, 'songCount': int(row[0]), 'genres': genres,
-                    'flag': bool(row[2])}
+                    'flag': bool(row[2]), 'artUrl': row[3],
+                    'hasArt': _artistHasArt(artistId)}
         finally:
             connection.close()
     except Exception as exception:

@@ -28,10 +28,23 @@ Page {
     property var genres: []
     property bool artistFlag: false
     property bool artistSongsLoading: false
+    property string artistArtUrl: ''
+    property bool artistHasArt: false
 
     header: PageHeader {
         id: artistHeader
         title: artistPage.artistName
+    }
+
+    // Full-page artist art background, faint for readability.
+    // Declared before the content: later children stack above it.
+    Image {
+        anchors.fill: parent
+        visible: artistPage.artistHasArt
+        source: artistPage.artistArtUrl
+        fillMode: Image.PreserveAspectCrop
+        opacity: 0.2
+        asynchronous: true
     }
 
     // Fixed header content: genres, songs + like, play-all.
@@ -48,14 +61,15 @@ Page {
         // Visual only - genre browse is a ROADMAP item.
         Flickable {
             width: parent.width
-            height: artistPage.genres.length > 0 ? units.gu(5) : 0
+            height: artistPage.genres.length > 0 ? units.gu(6) : 0
             visible: artistPage.genres.length > 0
-            contentWidth: genresRow.width
+            contentWidth: genresRow.width + units.gu(4)
             contentHeight: height
             clip: true
 
             Row {
                 id: genresRow
+                x: units.gu(2)
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: units.gu(1)
 
@@ -63,8 +77,8 @@ Page {
                     model: artistPage.genres
 
                     delegate: Rectangle {
-                        height: units.gu(4)
-                        width: genreLabel.implicitWidth + units.gu(3)
+                        height: units.gu(4.5)
+                        width: genreLabel.implicitWidth + units.gu(4.5)
                         radius: units.gu(1)
                         color: theme.palette.normal.base
 
@@ -146,7 +160,15 @@ Page {
                 color: theme.palette.normal.baseText
 
                 Label {
-                    anchors.centerIn: parent
+                    // Optical centering: the glyph sits left-bottom in
+                    // its em box - offsets nudge it right + up. Tune
+                    // the two gu values by eye if needed.
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        horizontalCenterOffset: units.gu(0.2)
+                        verticalCenter: parent.verticalCenter
+                        verticalCenterOffset: -units.gu(0.2)
+                    }
                     text: '▶'
                     fontSize: 'large'
                     color: theme.palette.normal.base
@@ -241,6 +263,8 @@ Page {
                 artistPage.songCount = result.songCount
                 artistPage.genres = result.genres
                 artistPage.artistFlag = result.flag
+                artistPage.artistArtUrl = result.artUrl
+                artistPage.artistHasArt = result.hasArt
             }
         })
         pythonBridge.call('bridge.getArtistAlbums', [artistPage.artistId], function(result) {
