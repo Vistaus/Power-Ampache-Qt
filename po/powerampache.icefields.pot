@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 18:01+0000\n"
+"POT-Creation-Date: 2026-09-24 18:38+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -196,19 +196,19 @@ msgstr ""
 msgid "Mastodon"
 msgstr ""
 
-#: ../qml/pages/AboutPage.qml:243
-msgid "Source code (GitHub)"
+#: ../qml/pages/AboutPage.qml:264
+msgid "Source code"
 msgstr ""
 
-#: ../qml/pages/AboutPage.qml:249
+#: ../qml/pages/AboutPage.qml:276
 msgid "License"
 msgstr ""
 
-#: ../qml/pages/AboutPage.qml:251
+#: ../qml/pages/AboutPage.qml:295
 msgid "GPL-3.0-only"
 msgstr ""
 
-#: ../qml/pages/AboutPage.qml:252
+#: ../qml/pages/AboutPage.qml:296
 msgid "Free as in Freedom"
 msgstr ""
 
@@ -216,7 +216,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:121 ../qml/pages/ArtistPage.qml:110
+#: ../qml/pages/AlbumPage.qml:121 ../qml/pages/ArtistPage.qml:111
 #: ../qml/pages/LibraryPage.qml:564 ../qml/pages/PlaylistDetailPage.qml:76
 msgid "Songs"
 msgstr ""
@@ -234,27 +234,27 @@ msgstr ""
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:104
+#: ../qml/pages/HomePage.qml:105
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:105
+#: ../qml/pages/HomePage.qml:106
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:106
+#: ../qml/pages/HomePage.qml:107
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:107
+#: ../qml/pages/HomePage.qml:108
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:108
+#: ../qml/pages/HomePage.qml:109
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:109
+#: ../qml/pages/HomePage.qml:110
 msgid "Random"
 msgstr ""
 
