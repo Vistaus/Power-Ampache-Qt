@@ -104,7 +104,10 @@ Page {
                     leftMargin: units.gu(2)
                     verticalCenter: parent.verticalCenter
                 }
-                text: i18n.tr('Songs') + ' ' + artistPage.songCount
+                // Mixed weight in one line: RichText <b> on the value
+                // only. The count is an int - no HTML escaping needed.
+                text: i18n.tr('Songs') + ' <b>' + artistPage.songCount + '</b>'
+                textFormat: Text.RichText
             }
 
             Item {
