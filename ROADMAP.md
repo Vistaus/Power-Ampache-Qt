@@ -30,6 +30,21 @@ design conversation when picked up.
   the library (art URL from the server, UserEntity already has the `art`
   column) unlocks the real avatar image.
 
+- **Desktop packaging: AppImage is THE desktop release format** —
+  first release and onward, not just a tester stopgap. Flatpak/
+  Flathub = possible future addition, revisit when the time comes.
+  Container/docker route rejected: container audio ignores host
+  volume (own Pulse stream — his maxed-knob annoyance). Effort:
+  AppImage = a session or two (copy prebuilt files from the clickable
+  image into an AppDir + launcher + appimagetool — the image he
+  trusts daily); Flatpak = days BECAUSE Flathub has no Lomiri
+  Components runtime → flatpak-builder rebuilds the toolkit from
+  source. One-liner: AppImage packages artifacts, Flatpak rebuilds
+  the stack. The AppDir work doubles as the future Flatpak
+  manifest's module list; re-check Flathub runtime availability
+  whenever Flatpak is picked up. UT clicks need no work (already
+  one-file installers).
+
 - **Bitcoin donation link** — pending verification that UT opens
   `bitcoin:` wallet URIs from apps; owner unsure, revisit later.
 

@@ -48,6 +48,7 @@ Page {
                 playback.playFrom(playlistDetailPage.tracks, rowIndex)
             }
             formatDuration: playlistDetailPage.formatDuration
+            showArt: true
         }
     }
 
