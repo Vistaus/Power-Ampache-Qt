@@ -1086,3 +1086,21 @@ def flagPlaylist(playlistId, flagged):
         return {'ok': True, 'flag': bool(entity.flag)}
     except Exception as exception:
         return _errorDict(exception)
+
+
+def getThemeSetting():
+    "Current theme choice ('system', 'light' or 'dark'); dark by default."
+    return {'ok': True, 'theme': _getAppSettings().get('theme', 'dark')}
+
+
+def setThemeSetting(theme):
+    "Persist the theme choice in settings.json (cached dict updated in place, so the change applies to every later dict build without restart)."
+    try:
+        settings = _getAppSettings()
+        settings['theme'] = theme
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(settings, settingsFile)
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)

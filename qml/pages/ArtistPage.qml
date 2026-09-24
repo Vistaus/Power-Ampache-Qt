@@ -197,7 +197,7 @@ Page {
         }
         clip: true
         cellWidth: parent.width / 2
-        cellHeight: cellWidth * 14 / 11
+        cellHeight: cellWidth * 13 / 11
         model: artistPage.albums
 
         delegate: Item {
@@ -232,7 +232,7 @@ Page {
                     rightMargin: units.gu(1)
                 }
                 text: modelData.name
-                fontSize: 'medium'
+                fontSize: 'small'
                 font.bold: true
                 elide: Text.ElideRight
                 maximumLineCount: 2

@@ -27,6 +27,18 @@ Page {
         { label: i18n.tr('Lossless (original)'), value: 0 }
     ]
     property int currentBitrate: 0
+    // Theme: applied LIVE via Theme.name; 'system' = platform default
+    // (phone-only semantics; desktop has no platform theme).
+    property string currentTheme: ''
+    function themeName(value) {
+        if (value === 'dark') {
+            return 'Lomiri.Components.Themes.SuruDark'
+        }
+        if (value === 'light') {
+            return 'Lomiri.Components.Themes.Ambiance'
+        }
+        return ''
+    }
     property bool artworkSwitchReady: false
 
     header: PageHeader { id: pageHeader; title: i18n.tr('Settings') }
@@ -46,6 +58,54 @@ Page {
         Column {
             id: settingsColumn
             width: settingsFlickable.width
+
+            Header { text: i18n.tr('Theme') }
+
+            Repeater {
+                model: [
+                    { label: i18n.tr('Dark'), value: 'dark' },
+                    { label: i18n.tr('Light'), value: 'light' },
+                    { label: i18n.tr('System (phone)'), value: 'system' }
+                ]
+
+                delegate: Standard {
+                    text: modelData.label
+                    onClicked: {
+                        settingsPage.currentTheme = modelData.value
+                        // Live apply; 'system' stays on the platform
+                        // default (empty name = no Theme.name write).
+                        var mapped = settingsPage.themeName(modelData.value)
+                        if (mapped !== '') {
+                            Theme.name = mapped
+                        }
+                        console.log('settings: theme live apply='
+                                    + modelData.value
+                                    + ' Theme.name=' + Theme.name)
+                        settingsPage.pythonBridge.call(
+                            'bridge.setThemeSetting',
+                            [modelData.value],
+                            function(result) {
+                                if (!result || !result.ok) {
+                                    console.log('settings: theme save failed: '
+                                                + (result ? result.message : 'null'))
+                                }
+                            })
+                    }
+
+                    Rectangle {
+                        anchors {
+                            right: parent.right
+                            rightMargin: units.gu(2)
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: units.gu(1.5)
+                        height: units.gu(1.5)
+                        radius: width / 2
+                        visible: settingsPage.currentTheme === modelData.value
+                        color: theme.palette.normal.baseText
+                    }
+                }
+            }
 
             Header { text: i18n.tr('Streaming') }
 
@@ -205,6 +265,11 @@ Page {
     }
 
     Component.onCompleted: {
+        pythonBridge.call('bridge.getThemeSetting', [], function(result) {
+            if (result && result.ok) {
+                settingsPage.currentTheme = result.theme
+            }
+        })
         pythonBridge.call('bridge.getStreamingQuality', [], function(result) {
             if (result && result.ok) {
                 currentBitrate = result.quality
