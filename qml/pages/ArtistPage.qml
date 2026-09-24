@@ -34,26 +34,6 @@ Page {
     header: PageHeader {
         id: artistHeader
         title: artistPage.artistName
-        // Bold title needs a contents takeover - PageHeader has no
-        // font hook (toolkit source verified); the plain title hides
-        // while contents is set, exactly like HomePage. The APL back
-        // action lives in the leading action bar - unaffected.
-        contents: Item {
-            anchors.fill: parent
-
-            Label {
-                anchors {
-                    left: parent.left
-                    leftMargin: units.gu(2)
-                    right: parent.right
-                    verticalCenter: parent.verticalCenter
-                }
-                text: artistPage.artistName
-                fontSize: 'large'
-                font.bold: true
-                elide: Text.ElideRight
-            }
-        }
     }
 
     // Full-page artist art background, faint for readability.
@@ -107,7 +87,6 @@ Page {
                             anchors.centerIn: parent
                             text: modelData
                             fontSize: 'medium'
-                            font.bold: true
                         }
                     }
                 }
@@ -126,8 +105,6 @@ Page {
                     verticalCenter: parent.verticalCenter
                 }
                 text: i18n.tr('Songs') + ' ' + artistPage.songCount
-                fontSize: 'large'
-                font.bold: true
             }
 
             Item {
@@ -145,7 +122,7 @@ Page {
                     // baseText, liked = negative (red). One glyph for
                     // both states - the color carries the state.
                     text: '♥'
-                    fontSize: 'large'
+                    fontSize: 'x-large'
                     color: artistPage.artistFlag
                            ? theme.palette.normal.negative
                            : theme.palette.normal.baseText
