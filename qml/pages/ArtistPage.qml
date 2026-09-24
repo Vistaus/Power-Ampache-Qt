@@ -53,6 +53,7 @@ Page {
         id: artistInfoColumn
         anchors {
             top: artistHeader.bottom
+            topMargin: units.gu(1)
             left: parent.left
             right: parent.right
         }

@@ -77,7 +77,7 @@ Page {
         id: albumInfoColumn
         anchors {
             top: albumPageHeader.bottom
-            topMargin: units.gu(0.5)
+            topMargin: units.gu(1)
             left: parent.left
             right: parent.right
         }

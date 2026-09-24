@@ -239,14 +239,58 @@ Page {
                     onClicked: Qt.openUrlExternally('https://floss.social/@powerampache')
                 }
             }
-            Standard {
-                text: i18n.tr('Source code (GitHub)')
-                onClicked: Qt.openUrlExternally('https://github.com/icefields/Power-Ampache-Qt')
+            Item {
+                width: parent.width
+                height: units.gu(6)
+
+                Row {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: units.gu(1.5)
+
+                    Image {
+                        width: units.gu(2.5)
+                        height: units.gu(2.5)
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: Qt.resolvedUrl('../../assets/about/ic_git.svg')
+                        asynchronous: true
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: i18n.tr('Source code (GitHub)')
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.openUrlExternally('https://github.com/icefields/Power-Ampache-Qt')
+                }
             }
 
             ThinDivider {}
 
             Header { text: i18n.tr('License') }
+            Item {
+                width: parent.width
+                height: units.gu(9)
+
+                Image {
+                    anchors {
+                        left: parent.left
+                        leftMargin: units.gu(2)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: units.gu(10)
+                    height: units.gu(6)
+                    fillMode: Image.PreserveAspectFit
+                    source: Qt.resolvedUrl('../../assets/about/gplv3.png')
+                    asynchronous: true
+                }
+            }
             Subtitled {
                 text: i18n.tr('GPL-3.0-only')
                 subText: i18n.tr('Free as in Freedom')

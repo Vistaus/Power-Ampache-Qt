@@ -818,12 +818,19 @@ def getServerInfo():
 
 
 def getAppInfo():
-    "About page: app title + version from the installed manifest.json (click root, one level above src/)."
+    "About page: app title + version from the installed manifest.json. Install layouts differ between desktop dev runs and phone clicks, so walk up from src/ until the manifest is found."
     try:
-        manifestPath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), '..', 'manifest.json')
-        with open(manifestPath, 'r') as manifestFile:
-            manifest = json.load(manifestFile)
+        directory = os.path.dirname(os.path.abspath(__file__))
+        manifest = None
+        for _ in range(5):
+            candidate = os.path.join(directory, 'manifest.json')
+            if os.path.exists(candidate):
+                with open(candidate, 'r') as manifestFile:
+                    manifest = json.load(manifestFile)
+                break
+            directory = os.path.dirname(directory)
+        if manifest is None:
+            return {'ok': True, 'title': '', 'version': ''}
         return {'ok': True, 'title': manifest.get('title', ''),
                 'version': manifest.get('version', '')}
     except Exception as exception:
