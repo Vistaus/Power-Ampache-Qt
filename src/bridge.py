@@ -1017,3 +1017,85 @@ def getArtistSongs(artistId):
         return {'ok': True, 'songs': [_songDict(song) for song in songs]}
     except Exception as exception:
         return _errorDict(exception)
+
+
+def getAlbumInfo(albumId):
+    "Album header: artist, year, total time (seconds), song count, genre + featured artist name lists, flag + art from the cached AlbumEntity row (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'artistName': '', 'year': 0, 'time': 0,
+                    'songCount': 0, 'genres': [], 'artists': [],
+                    'flag': False, 'artUrl': '', 'hasArt': False}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT artistName, year, time, songCount, genre, artists, '
+                'flag, artUrl FROM AlbumEntity WHERE id = ?',
+                (str(albumId),)
+            ).fetchone()
+            if row is None:
+                return {'ok': True, 'artistName': '', 'year': 0, 'time': 0,
+                        'songCount': 0, 'genres': [], 'artists': [],
+                        'flag': False, 'artUrl': '', 'hasArt': False}
+            def _names(fragment):
+                try:
+                    parsed = json.loads(fragment)
+                    return [entry['name'] for entry in parsed
+                            if isinstance(entry, dict) and 'name' in entry]
+                except (ValueError, TypeError):
+                    return []
+            return {'ok': True, 'artistName': row[0], 'year': int(row[1]),
+                    'time': int(row[2]), 'songCount': int(row[3]),
+                    'genres': _names(row[4]), 'artists': _names(row[5]),
+                    'flag': bool(row[6]), 'artUrl': row[7],
+                    'hasArt': _albumHasArt(albumId)}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def flagAlbum(albumId, flagged):
+    "Like/unlike the album: server flag + verified re-fetch (client.flag) which write-through refreshes the cached AlbumEntity. Returns the fresh flag."
+    try:
+        client = getClient()
+        entity = client.flag('album', albumId, bool(flagged))
+        return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getPlaylistInfo(playlistId):
+    "Playlist header: song count + flag + art from the cached PlaylistEntity row (local read, no network). items is nullable - None means 0."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songCount': 0, 'flag': False,
+                    'artUrl': '', 'hasArt': False}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT items, flag, artUrl FROM PlaylistEntity WHERE id = ?',
+                (str(playlistId),)
+            ).fetchone()
+            if row is None:
+                return {'ok': True, 'songCount': 0, 'flag': False,
+                        'artUrl': '', 'hasArt': False}
+            return {'ok': True, 'songCount': int(row[0] or 0),
+                    'flag': bool(row[1]), 'artUrl': row[2],
+                    'hasArt': _playlistHasArt(playlistId)}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def flagPlaylist(playlistId, flagged):
+    "Like/unlike the playlist: server flag + verified re-fetch (client.flag) which write-through refreshes the cached PlaylistEntity. Returns the fresh flag."
+    try:
+        client = getClient()
+        entity = client.flag('playlist', playlistId, bool(flagged))
+        return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
