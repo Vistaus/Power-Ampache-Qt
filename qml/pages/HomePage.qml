@@ -83,6 +83,7 @@ Page {
         id: homeFlickable
         anchors {
             top: pageHeader.bottom
+            topMargin: units.gu(1)
             left: parent.left
             right: parent.right
             bottom: parent.bottom

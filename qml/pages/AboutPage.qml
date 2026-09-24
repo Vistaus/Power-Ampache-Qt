@@ -261,7 +261,7 @@ Page {
 
                     Label {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: i18n.tr('Source code (GitHub)')
+                        text: i18n.tr('Source code')
                     }
                 }
 
@@ -298,6 +298,26 @@ Page {
         }
     }
 
+    // Reads the installed manifest.json directly from QML:
+    // Qt.resolvedUrl anchors to THIS FILE (qml/pages/), so
+    // '../../manifest.json' is the click root on every layout.
+    // Replaces bridge.getAppInfo - Python-side path resolution
+    // fails on the phone (CWD differs from desktop).
+    function loadAppInfo() {
+        var xhr = new XMLHttpRequest()
+        xhr.open('GET', Qt.resolvedUrl('../../manifest.json'))
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 0 || xhr.status === 200) {
+                    var manifest = JSON.parse(xhr.responseText)
+                    aboutPage.appTitle = manifest.title || ''
+                    aboutPage.appVersion = manifest.version || ''
+                }
+            }
+        }
+        xhr.send()
+    }
+
     Component.onCompleted: {
         pythonBridge.call('bridge.getUserInfo', [], function(result) {
             if (result && result.ok) aboutPage.serverUrl = result.serverUrl
@@ -305,11 +325,6 @@ Page {
         pythonBridge.call('bridge.getServerInfo', [], function(result) {
             if (result && result.ok) aboutPage.apiVersion = result.api
         })
-        pythonBridge.call('bridge.getAppInfo', [], function(result) {
-            if (result && result.ok) {
-                aboutPage.appTitle = result.title
-                aboutPage.appVersion = result.version
-            }
-        })
+        loadAppInfo()
     }
 }

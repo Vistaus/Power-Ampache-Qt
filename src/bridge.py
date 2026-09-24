@@ -817,26 +817,6 @@ def getServerInfo():
         return _errorDict(exception)
 
 
-def getAppInfo():
-    "About page: app title + version from the installed manifest.json. Install layouts differ between desktop dev runs and phone clicks, so walk up from src/ until the manifest is found."
-    try:
-        directory = os.path.dirname(os.path.abspath(__file__))
-        manifest = None
-        for _ in range(5):
-            candidate = os.path.join(directory, 'manifest.json')
-            if os.path.exists(candidate):
-                with open(candidate, 'r') as manifestFile:
-                    manifest = json.load(manifestFile)
-                break
-            directory = os.path.dirname(directory)
-        if manifest is None:
-            return {'ok': True, 'title': '', 'version': ''}
-        return {'ok': True, 'title': manifest.get('title', ''),
-                'version': manifest.get('version', '')}
-    except Exception as exception:
-        return _errorDict(exception)
-
-
 def getStreamingQuality():
     "Current stored streaming quality, RAW: 0 = lossless (original quality). ORIGINAL QUALITY (0) is the default when nothing is stored — a fresh install must not force a transcode; the schema column default (320) is not consulted. Must NOT reuse _streamingBitrate - it maps the stored 0 to None for URL building, and this function must tell 'nothing stored' (0 default) apart from '0 stored' (also 0, same UI outcome) while never collapsing to 320."
     try:
