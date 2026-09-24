@@ -49,9 +49,7 @@ Page {
 
     header: PageHeader {
         id: albumPageHeader
-        title: albumPage.albumArtistName !== ''
-               ? albumPage.albumArtistName + ' - ' + albumPage.albumName
-               : albumPage.albumName
+        title: albumPage.albumName
 
         trailingActionBar.actions: [
             Action {

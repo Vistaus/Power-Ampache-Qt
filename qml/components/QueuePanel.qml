@@ -14,6 +14,7 @@ ListView {
 
     property var playback
     property var overlayRoot
+    property var formatDuration
 
     // Pull-to-dismiss wiring: forward top-overshoot to the overlay
     // sheet (PlayerOverlay overscrollPull/Release/Retract). Dragging
@@ -82,15 +83,15 @@ ListView {
             anchors {
                 left: queueArtSlot.right
                 leftMargin: units.gu(1)
-                right: parent.right
-                rightMargin: units.gu(2)
+                right: queueDurationLabel.left
+                rightMargin: units.gu(1)
                 verticalCenter: parent.verticalCenter
             }
 
             Label {
                 width: parent.width
                 text: modelData.title
-                font.bold: index === playback.playerIndex
+                font.bold: true
                 elide: Text.ElideRight
             }
 
@@ -100,6 +101,17 @@ ListView {
                 fontSize: 'small'
                 elide: Text.ElideRight
             }
+        }
+
+        Label {
+            id: queueDurationLabel
+            anchors {
+                right: parent.right
+                rightMargin: units.gu(2)
+                verticalCenter: parent.verticalCenter
+            }
+            text: formatDuration(modelData.time)
+            fontSize: 'small'
         }
 
         MouseArea {
