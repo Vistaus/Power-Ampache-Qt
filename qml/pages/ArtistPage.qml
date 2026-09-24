@@ -34,6 +34,26 @@ Page {
     header: PageHeader {
         id: artistHeader
         title: artistPage.artistName
+        // Bold title needs a contents takeover - PageHeader has no
+        // font hook (toolkit source verified); the plain title hides
+        // while contents is set, exactly like HomePage. The APL back
+        // action lives in the leading action bar - unaffected.
+        contents: Item {
+            anchors.fill: parent
+
+            Label {
+                anchors {
+                    left: parent.left
+                    leftMargin: units.gu(2)
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                }
+                text: artistPage.artistName
+                fontSize: 'large'
+                font.bold: true
+                elide: Text.ElideRight
+            }
+        }
     }
 
     // Full-page artist art background, faint for readability.
@@ -86,7 +106,8 @@ Page {
                             id: genreLabel
                             anchors.centerIn: parent
                             text: modelData
-                            fontSize: 'small'
+                            fontSize: 'medium'
+                            font.bold: true
                         }
                     }
                 }
@@ -105,6 +126,8 @@ Page {
                     verticalCenter: parent.verticalCenter
                 }
                 text: i18n.tr('Songs') + ' ' + artistPage.songCount
+                fontSize: 'large'
+                font.bold: true
             }
 
             Item {
@@ -227,7 +250,8 @@ Page {
                     rightMargin: units.gu(1)
                 }
                 text: modelData.name
-                fontSize: 'small'
+                fontSize: 'medium'
+                font.bold: true
                 elide: Text.ElideRight
                 maximumLineCount: 2
                 wrapMode: Text.WordWrap
