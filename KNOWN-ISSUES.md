@@ -42,6 +42,15 @@ with `feat/seek` on top.
    moment, a manual skip may re-call `play()` — harmless, but inconsistent
    with the playing-truth model.
 
+8. **App version invisible on the About page (phone only).** Desktop
+   renders the version string; phone installs show the row empty. The
+   manifest IS installed at the click root (CMake install verified), but
+   both read attempts failed on device: the bridge `__file__` walk-up
+   (1.0.52) and the QML `Qt.resolvedUrl` XMLHttpRequest (1.0.53).
+   Root cause unidentified — parked 2026-09-24 as very minor, not worth
+   more time. Next diagnostic if ever picked up: log the XHR status
+   value on the phone.
+
 ## Testing status
 
 - Phone installs and testing are ongoing alongside desktop (phone

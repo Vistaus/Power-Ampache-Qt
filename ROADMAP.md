@@ -48,6 +48,12 @@ design conversation when picked up.
 - **Bitcoin donation link** — pending verification that UT opens
   `bitcoin:` wallet URIs from apps; owner unsure, revisit later.
 
+- **About page version on the phone** — the version string renders on
+  desktop but stays empty on phone installs. Two mechanisms attempted
+  and parked on 2026-09-24 (bridge walk-up, QML XMLHttpRequest) — both
+  work on desktop, neither on device. Very minor; needs on-device
+  debugging (XHR status log) when anyone picks it up.
+
 ## Notes
 
 - The settings menu itself (avatar dropdown, Settings page, About page)
