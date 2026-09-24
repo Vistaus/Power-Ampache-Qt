@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 18:56+0000\n"
+"POT-Creation-Date: 2026-09-24 20:52+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:142
+#: ../qml/Main.qml:161
 msgid "Internal error"
 msgstr ""
 
@@ -148,7 +148,7 @@ msgstr ""
 msgid "Replay gain"
 msgstr ""
 
-#: ../qml/components/UserMenu.qml:77 ../qml/pages/SettingsPage.qml:32
+#: ../qml/components/UserMenu.qml:77 ../qml/pages/SettingsPage.qml:44
 msgid "Settings"
 msgstr ""
 
@@ -287,11 +287,11 @@ msgstr ""
 msgid "Load more"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:508 ../qml/pages/SettingsPage.qml:199
+#: ../qml/pages/LibraryPage.qml:508 ../qml/pages/SettingsPage.qml:259
 msgid "albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:509 ../qml/pages/SettingsPage.qml:198
+#: ../qml/pages/LibraryPage.qml:509 ../qml/pages/SettingsPage.qml:258
 msgid "songs"
 msgstr ""
 
@@ -363,58 +363,74 @@ msgstr ""
 msgid "Lossless (original)"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:50
+#: ../qml/pages/SettingsPage.qml:62
+msgid "Theme"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:66
+msgid "Dark"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:67
+msgid "Light"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:68
+msgid "System (phone)"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:110
 msgid "Streaming"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:85
+#: ../qml/pages/SettingsPage.qml:145
 msgid "Artwork"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:99
+#: ../qml/pages/SettingsPage.qml:159
 msgid "Use server placeholder art"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:101
+#: ../qml/pages/SettingsPage.qml:161
 msgid "Switch on if your server provides a custom placeholder art"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:131
+#: ../qml/pages/SettingsPage.qml:191
 msgid "Cache"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:134
+#: ../qml/pages/SettingsPage.qml:194
 msgid "Cached library"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:139 ../qml/pages/SettingsPage.qml:168
+#: ../qml/pages/SettingsPage.qml:199 ../qml/pages/SettingsPage.qml:228
 msgid "Clear cache"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:146
+#: ../qml/pages/SettingsPage.qml:206
 msgid "Log out"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:162
+#: ../qml/pages/SettingsPage.qml:222
 msgid "Counting…"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:169
+#: ../qml/pages/SettingsPage.qml:229
 msgid "Removes all cached music data. Your login and settings are kept."
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:171
+#: ../qml/pages/SettingsPage.qml:231
 msgid "Clear"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:179
+#: ../qml/pages/SettingsPage.qml:239
 msgid "Cancel"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:200
+#: ../qml/pages/SettingsPage.qml:260
 msgid "artists"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:202
+#: ../qml/pages/SettingsPage.qml:262
 msgid "Unavailable"
 msgstr ""

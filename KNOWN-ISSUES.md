@@ -51,6 +51,28 @@ with `feat/seek` on top.
    more time. Next diagnostic if ever picked up: log the XHR status
    value on the phone.
 
+9. **First login fails after entering credentials ("server unreachable"),
+   app may crash; restart works.** Seen once in clickable desktop
+   (2026-09-24), not reproducible on demand since; credentials ARE
+   stored before the failure, so a restart lands logged-in. Suspected
+   uncaught exception in the login→error-page transition. Parked by
+   owner decision pending a captured log; guard item on the ROADMAP.
+
+10. **Blank left column (wide mode) after returning from Settings
+    (2 occurrences, 2026-09-24).** First seen after repeated theme
+    switches, then WITHOUT any theme change — just Settings → back.
+    NOT theme-caused: a pre-existing navBar mount-state bug now
+    surfacing under heavy Settings/wide-mode navigation. Failure
+    signature (logged): navBar holds libraryInstance=true while the
+    column renders blank — the cached mount reference goes stale
+    (possibly an APL page-wrapper teardown, e.g. the "sourcePage must
+    be added to the view" rejection logged at boot), so remount
+    logic believes the library is mounted and skips. Recovery:
+    restart. Recurring enough to warrant a real fix round: audit
+    navBar's maybeMountLibrary/mountLibraryDefault path (does it
+    verify the instance is actually IN the APL, or only check its
+    own cache?) and re-mount on detected absence.
+
 ## Testing status
 
 - Phone installs and testing are ongoing alongside desktop (phone

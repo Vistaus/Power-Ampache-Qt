@@ -54,6 +54,15 @@ design conversation when picked up.
   work on desktop, neither on device. Very minor; needs on-device
   debugging (XHR status log) when anyone picks it up.
 
+- **Login crash guard** — first-login after entering credentials can
+  crash (seen once in clickable desktop, 2026-09-24; not reproducible
+  on demand since). Credentials ARE stored before the crash, so a
+  restart lands logged-in. Suspected uncaught exception in the
+  login→error-page transition. Action when picked up: capture a log
+  first (owner will hand one over when it recurs), then wrap the
+  login/auth flow + page transition in a guarded try/catch that
+  logs the exception instead of dying.
+
 ## Notes
 
 - The settings menu itself (avatar dropdown, Settings page, About page)
