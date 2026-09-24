@@ -164,22 +164,13 @@ Flickable {
             Rectangle {
                 id: infoCoverFrame
                 anchors.fill: parent
-                color: theme.palette.normal.base
+                color: 'transparent'
 
                 Image {
                     anchors.fill: parent
-                    source: playback.currentSong !== null ? playback.currentSong.imageUrl : ''
-                    visible: playback.currentSong !== null && playback.currentSong.imageUrl !== ''
+                    source: playback.currentSong !== null && playback.currentSong.hasArt ? playback.currentSong.imageUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
-                }
-
-                Icon {
-                    anchors.centerIn: parent
-                    width: units.gu(8)
-                    height: units.gu(8)
-                    name: 'stock_music'
-                    visible: playback.currentSong === null || playback.currentSong.imageUrl === ''
                 }
             }
         }

@@ -9,7 +9,7 @@
             "desktop":  "powerampache.desktop"
         }
     },
-    "version": "1.0.25",
+    "version": "1.0.37",
     "maintainer": "icefields <arctic.icefields@slmails.com>",
     "framework" : "$ENV{CLICK_FRAMEWORK}"
 }

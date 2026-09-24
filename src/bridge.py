@@ -29,6 +29,37 @@ _SEARCH_PAGE_SIZE = 500
 
 _threadLocal = threading.local()
 
+# Ids the server reports as having NO art (has_art=0 in the raw
+# payload rows). The art URL is built unconditionally and serves a
+# server-side placeholder image, so artUrl alone can never identify
+# artless rows; this set is rebuilt from payload rows on every fetch.
+# Session memory only: rows never re-fetched default to artful.
+_ARTLESS_IDS = {'album': set(), 'artist': set(), 'playlist': set()}
+
+# App-owned settings (settings.json beside the cache DB; the Room
+# schema is read-only and LocalSettingsEntity has no column with
+# matching semantics). None = not read yet; the dict is cached and
+# mutated in place so setters stay coherent.
+_appSettings = None
+
+
+def _getAppSettings():
+    "Read settings.json from the app data dir; a missing or corrupt file means empty settings."
+    global _appSettings
+    if _appSettings is None:
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        try:
+            with open(settingsPath, 'r') as settingsFile:
+                _appSettings = json.load(settingsFile)
+        except (OSError, ValueError):
+            _appSettings = {}
+    return _appSettings
+
+
+def _useServerPlaceholder():
+    "True when the user chose the server's own placeholder art over the app fallback."
+    return bool(_getAppSettings().get('useServerPlaceholder'))
+
 
 def getDbPath():
     "Return the cache database path inside the XDG data dir."
@@ -68,6 +99,71 @@ def _errorDict(exception):
     else:
         errorKind = 'unknown'
     return {'ok': False, 'errorKind': errorKind, 'message': str(exception)}
+
+
+def _captureHasArt(rows, kind):
+    "Record which payload rows the server says have no art. Ids are normalized to strings (server JSON ids are strings)."
+    if not rows:
+        return
+    for row in rows:
+        objectId = str(row.get('id') or '')
+        if not objectId:
+            continue
+        rawHasArt = row.get('has_art')
+        if rawHasArt is None:
+            # Missing flag: default artful (do not punish rows the
+            # server never labeled).
+            hasArt = 1
+        else:
+            try:
+                # JSON booleans: int(True)==1, int(False)==0. Never a
+                # falsy default - False must stay False or the artless
+                # fallback can never fire.
+                hasArt = int(rawHasArt)
+            except (TypeError, ValueError):
+                # Unconvertable forms ('true'/'false' style strings)
+                # resolve via explicit truthiness.
+                hasArt = 1 if rawHasArt in (True, 'true', 'True', 1, '1') else 0
+        if hasArt == 0:
+            _ARTLESS_IDS[kind].add(objectId)
+        else:
+            _ARTLESS_IDS[kind].discard(objectId)
+
+
+def _albumHasArt(albumId):
+    return _useServerPlaceholder() or str(albumId) not in _ARTLESS_IDS['album']
+
+
+def _artistHasArt(artistId):
+    return _useServerPlaceholder() or str(artistId) not in _ARTLESS_IDS['artist']
+
+
+def _playlistHasArt(playlistId):
+    return _useServerPlaceholder() or str(playlistId) not in _ARTLESS_IDS['playlist']
+
+
+def _streamingBitrate():
+    "Stored streaming quality for stream URLs; None = omit the bitrate param (original quality)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return None
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT streamingQuality FROM LocalSettingsEntity LIMIT 1'
+            ).fetchone()
+            if row is None or row[0] is None:
+                return None
+            quality = int(row[0])
+            # 0 was the pre-1.0.27 "lossless" marker; any non-positive
+            # stored value means "omit the bitrate param" (original
+            # quality).
+            return quality if quality > 0 else None
+        finally:
+            connection.close()
+    except Exception:
+        return None
 
 
 def init():
@@ -128,6 +224,7 @@ def _albumDict(album):
         'artistName': album.artistName,
         'artUrl': album.artUrl,
         'year': album.year,
+        'hasArt': _albumHasArt(album.id),
     }
 
 
@@ -142,6 +239,7 @@ def _songDict(song):
         'albumName': song.albumName,
         'time': song.time,
         'imageUrl': song.imageUrl,
+        'hasArt': _albumHasArt(song.albumId),
     }
 
 
@@ -154,6 +252,7 @@ def _artistDict(artist):
         'songCount': artist.songCount,
         'artUrl': artist.artUrl,
         'flag': artist.flag,
+        'hasArt': _artistHasArt(artist.id),
     }
 
 
@@ -162,6 +261,9 @@ def _albumList(fetcher):
     try:
         client = getClient()
         albums = fetcher(client)
+        # Stats responses carry the album rows; capture their has_art
+        # flags before mapping.
+        _captureHasArt((client.lastPayload or {}).get('album') or [], 'album')
         return {'ok': True, 'albums': [_albumDict(album) for album in albums]}
     except Exception as exception:
         return _errorDict(exception)
@@ -190,6 +292,7 @@ def getFavouriteAlbums():
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -227,9 +330,19 @@ def getPlaylists():
         if not os.path.exists(dbPath):
             return {'ok': True, 'playlists': []}
         client = getClient()
-        # The library auto-paginates and persists every response; the
-        # return value is discarded, the cache DB is the source of truth.
-        client.getPlaylists()
+        # Self-paginated in 500-row pages with short-page termination
+        # (the searchPlaylists shape): a bare list call auto-paginates
+        # and lastPayload keeps ONLY the last page, so has_art capture
+        # would miss rows. The return value is discarded, the cache DB
+        # is the source of truth.
+        offset = 0
+        while True:
+            client.getPlaylists(offset=offset, limit=_SEARCH_PAGE_SIZE)
+            pageRows = (client.lastPayload or {}).get('playlist') or []
+            _captureHasArt(pageRows, 'playlist')
+            if len(pageRows) < _SEARCH_PAGE_SIZE:
+                break
+            offset += _SEARCH_PAGE_SIZE
         connection = sqlite3.connect(dbPath)
         try:
             # Order: highest rated, flagged, owned by the logged-in user, smart playlists last, then insertion order.
@@ -248,6 +361,7 @@ def getPlaylists():
                     'items': row[3],
                     'type': row[4],
                     'artUrl': row[5],
+                    'hasArt': _playlistHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -266,6 +380,7 @@ def getAlbumsPage(offset, limit=100):
         # page; the true page size comes from lastPayload.
         client.getAlbums(offset=offset, limit=limit)
         pageRows = (client.lastPayload or {}).get('album') or []
+        _captureHasArt(pageRows, 'album')
         connection = sqlite3.connect(getDbPath())
         try:
             cursor = connection.execute(
@@ -279,6 +394,7 @@ def getAlbumsPage(offset, limit=100):
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -297,6 +413,7 @@ def getArtistsPage(offset, limit=100):
         # The return value is the full cache read-back, not the server
         # page; the true page size comes from lastPayload.
         pageRows = (client.lastPayload or {}).get('artist') or []
+        _captureHasArt(pageRows, 'artist')
         albumArtists = [artist for artist in artists if artist.albumCount > 0]
         return {
             'ok': True,
@@ -338,6 +455,9 @@ def getArtistAlbums(artistId):
         # include='albums' persists the artist's albums; the return
         # value is discarded, the cache DB is the source of truth.
         client.getArtist(artistId, include='albums')
+        # The include payload nests the artist's albums under the same
+        # 'album' key; capture their has_art flags.
+        _captureHasArt((client.lastPayload or {}).get('album') or [], 'album')
         connection = sqlite3.connect(dbPath)
         try:
             cursor = connection.execute(
@@ -353,6 +473,7 @@ def getArtistAlbums(artistId):
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
             ]
@@ -384,6 +505,7 @@ def searchPlaylists(query):
         while True:
             client.getPlaylists(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
             pageRows = (client.lastPayload or {}).get('playlist') or []
+            _captureHasArt(pageRows, 'playlist')
             for pageRow in pageRows:
                 matchedIds.add(str(pageRow.get('id')))
             if len(pageRows) < _SEARCH_PAGE_SIZE:
@@ -411,6 +533,7 @@ def searchPlaylists(query):
                     'items': row[3],
                     'type': row[4],
                     'artUrl': row[5],
+                    'hasArt': _playlistHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds
@@ -433,6 +556,7 @@ def searchAlbums(query):
         while True:
             client.getAlbums(filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
             pageRows = (client.lastPayload or {}).get('album') or []
+            _captureHasArt(pageRows, 'album')
             for pageRow in pageRows:
                 matchedIds.add(str(pageRow.get('id')))
             if len(pageRows) < _SEARCH_PAGE_SIZE:
@@ -455,6 +579,7 @@ def searchAlbums(query):
                     'artistName': row[2],
                     'artUrl': row[3],
                     'year': row[4],
+                    'hasArt': _albumHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds
@@ -500,6 +625,7 @@ def searchSongs(query):
                     'albumName': row[5],
                     'time': row[6],
                     'imageUrl': row[7],
+                    'hasArt': _albumHasArt(row[4]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds
@@ -522,6 +648,7 @@ def searchArtists(query):
         while True:
             client.getArtists(albumArtist=1, filter=query, offset=offset, limit=_SEARCH_PAGE_SIZE)
             pageRows = (client.lastPayload or {}).get('artist') or []
+            _captureHasArt(pageRows, 'artist')
             for pageRow in pageRows:
                 matchedIds.add(str(pageRow.get('id')))
             if len(pageRows) < _SEARCH_PAGE_SIZE:
@@ -543,6 +670,7 @@ def searchArtists(query):
                     'songCount': row[3],
                     'artUrl': row[4],
                     'flag': row[5],
+                    'hasArt': _artistHasArt(row[0]),
                 }
                 for row in cursor.fetchall()
                 if str(row[0]) in matchedIds and row[2] > 0
@@ -555,13 +683,15 @@ def searchArtists(query):
 
 
 def getStreamUrl(songId, stats=None):
-    """Return a stream URL for the built-in player. The stats argument
+    """Return a stream URL for the built-in player. The bitrate comes
+    from the stored streaming quality (LocalSettingsEntity); None =
+    original quality (the bitrate param is omitted). The stats argument
     passes through verbatim: real plays omit it (the library default
     records the play), the spike passes 0. The URL embeds the live
     session token - never log it, never persist it."""
     try:
         client = getClient()
-        url = client.getStreamUrl(songId, stats=stats)
+        url = client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats)
         return {'ok': True, 'url': url}
     except Exception as exception:
         return _errorDict(exception)
@@ -571,12 +701,13 @@ def getStreamUrls(songIds, stats=None):
     """Return stream URLs for a list of song ids in one call, for the QML
     Playlist architecture: the media-hub opens tracks itself, so the whole
     queue is handed over as URLs at tap time. Pure URL building per id, no
-    network. The stats argument passes through verbatim to every URL; real
-    plays omit it. The URLs embed the live session token - never log them,
-    never persist them."""
+    network. The bitrate comes from the stored streaming quality
+    (LocalSettingsEntity); None = original quality. The stats argument
+    passes through verbatim to every URL; real plays omit it. The URLs
+    embed the live session token - never log them, never persist them."""
     try:
         client = getClient()
-        urls = [client.getStreamUrl(songId, stats=stats) for songId in songIds]
+        urls = [client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats) for songId in songIds]
         return {'ok': True, 'urls': urls}
     except Exception as exception:
         return _errorDict(exception)
@@ -641,5 +772,196 @@ def getLyrics(songId):
             return {'ok': True, 'lyrics': lyrics}
         finally:
             connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getUserInfo():
+    "Menu header: username + server address from the stored credentials (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': False, 'errorKind': 'credentials', 'message': 'no credentials stored'}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT username, serverUrl FROM CredentialsEntity LIMIT 1'
+            ).fetchone()
+            if row is None:
+                return {'ok': False, 'errorKind': 'credentials', 'message': 'no credentials stored'}
+            return {'ok': True, 'username': row[0], 'serverUrl': row[1]}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getServerInfo():
+    "About page: server address + API version + catalog counts from SessionEntity (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': False, 'errorKind': 'credentials', 'message': 'no session stored'}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT api, songs, albums, artists, playlists FROM SessionEntity LIMIT 1'
+            ).fetchone()
+            if row is None:
+                return {'ok': False, 'errorKind': 'credentials', 'message': 'no session stored'}
+            return {'ok': True, 'api': row[0], 'songs': row[1], 'albums': row[2],
+                    'artists': row[3], 'playlists': row[4]}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getAppInfo():
+    "About page: app title + version from the installed manifest.json (click root, one level above src/)."
+    try:
+        manifestPath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), '..', 'manifest.json')
+        with open(manifestPath, 'r') as manifestFile:
+            manifest = json.load(manifestFile)
+        return {'ok': True, 'title': manifest.get('title', ''),
+                'version': manifest.get('version', '')}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getStreamingQuality():
+    "Current stored streaming quality, RAW: 0 = lossless (original quality). ORIGINAL QUALITY (0) is the default when nothing is stored — a fresh install must not force a transcode; the schema column default (320) is not consulted. Must NOT reuse _streamingBitrate - it maps the stored 0 to None for URL building, and this function must tell 'nothing stored' (0 default) apart from '0 stored' (also 0, same UI outcome) while never collapsing to 320."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'quality': 0}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT streamingQuality FROM LocalSettingsEntity LIMIT 1'
+            ).fetchone()
+            if row is None or row[0] is None:
+                return {'ok': True, 'quality': 0}
+            return {'ok': True, 'quality': int(row[0])}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def setStreamingQuality(quality):
+    "Persist the streaming quality in LocalSettingsEntity (app-owned table, library never writes it). 0 = lossless (bitrate param omitted)."
+    try:
+        dbPath = getDbPath()
+        ensureDatabase(dbPath)
+        connection = sqlite3.connect(dbPath)
+        try:
+            connection.execute(
+                'INSERT OR REPLACE INTO LocalSettingsEntity '
+                "(username, theme, enableRemoteLogging, hideDonationButton, smartDownloadEnabled, "
+                'enableAutoUpdates, streamingQuality, isNormalizeVolumeEnabled, '
+                'isMonoAudioEnabled, isGlobalShuffleEnabled, playlistSongsSorting, '
+                'isOfflineModeEnabled, isDownloadsSdCard, sleepTimerMinutes, '
+                "saveSongAfterPlayback, saveFavouriteSongAfterPlayback) "
+                "VALUES ((SELECT username FROM CredentialsEntity LIMIT 1), '', 0, 0, 0, 0, ?, 0, 0, 0, 'ASC', 0, 0, 0, 0, 0)",
+                (int(quality),)
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getServerPlaceholderSetting():
+    "Current 'Use server placeholder art' value; off (False) by default."
+    return {'ok': True, 'enabled': _useServerPlaceholder()}
+
+
+def setServerPlaceholderSetting(enabled):
+    "Persist the 'Use server placeholder art' choice in settings.json (cached dict updated in place, so the change applies to every later dict build without restart)."
+    try:
+        _getAppSettings()['useServerPlaceholder'] = bool(enabled)
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(_getAppSettings(), settingsFile)
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getCacheStats():
+    "Cache size panel: row counts + total song bytes from the cache tables (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songs': 0, 'albums': 0, 'artists': 0,
+                    'playlists': 0, 'totalSize': 0}
+        connection = sqlite3.connect(dbPath)
+        try:
+            def _count(table):
+                return connection.execute(
+                    'SELECT COUNT(*) FROM ' + table).fetchone()[0]
+            sizeRow = connection.execute(
+                'SELECT COALESCE(SUM(size), 0) FROM SongEntity').fetchone()
+            return {'ok': True,
+                    'songs': _count('SongEntity'),
+                    'albums': _count('AlbumEntity'),
+                    'artists': _count('ArtistEntity'),
+                    'playlists': _count('PlaylistEntity'),
+                    'totalSize': sizeRow[0]}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def clearCache():
+    "Clear cached music data. CredentialsEntity/SessionEntity/LocalSettingsEntity share this DB file and are PRESERVED — only data tables are deleted."
+    try:
+        dbPath = getDbPath()
+        if os.path.exists(dbPath):
+            connection = sqlite3.connect(dbPath)
+            try:
+                for table in ['SongEntity', 'AlbumEntity', 'ArtistEntity',
+                              'PlaylistEntity', 'PlaylistSongEntity',
+                              'GenreEntity', 'HistoryEntity',
+                              'RecommendedArtistEntity',
+                              'DownloadedSongEntity']:
+                    connection.execute('DELETE FROM ' + table)
+                connection.commit()
+            finally:
+                connection.close()
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def logout():
+    "Destroy the session (best-effort server goodbye, offline-safe) then delete the local session + credentials rows. The cache DB and LocalSettingsEntity survive. The thread-local client is discarded (goodbye() marks it terminated)."
+    try:
+        client = None
+        try:
+            client = getClient()
+        except Exception:
+            client = None
+        if client is not None:
+            try:
+                client.goodbye()
+            except Exception:
+                pass
+        dbPath = getDbPath()
+        if os.path.exists(dbPath):
+            connection = sqlite3.connect(dbPath)
+            try:
+                connection.execute('DELETE FROM SessionEntity')
+                connection.execute('DELETE FROM CredentialsEntity')
+                connection.commit()
+            finally:
+                connection.close()
+        _threadLocal.client = None
+        return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)

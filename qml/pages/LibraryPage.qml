@@ -166,7 +166,10 @@ Page {
                 rightMargin: units.gu(1)
                 verticalCenter: parent.verticalCenter
             }
-            placeholderText: i18n.tr('Search')
+            placeholderText: [i18n.tr('Search Playlists'),
+                              i18n.tr('Search Albums'),
+                              i18n.tr('Search Songs'),
+                              i18n.tr('Search Artists')][libraryHeader.sections.selectedIndex]
             inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
             onTextChanged: {
                 libraryPage.searchQuery = text.trim()
@@ -259,19 +262,11 @@ Page {
                 width: units.gu(7)
                 height: width
                 radius: 'small'
-                backgroundColor: theme.palette.normal.base
+                backgroundColor: 'transparent'
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
-                    source: modelData.artUrl || ''
+                    source: modelData.hasArt ? modelData.artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     asynchronous: true
-                }
-
-                Icon {
-                    anchors.centerIn: parent
-                    width: units.gu(3)
-                    height: units.gu(3)
-                    name: 'view-list-symbolic'
-                    visible: !modelData.artUrl
                 }
             }
 
@@ -347,10 +342,10 @@ Page {
                 width: albumGridView.cellWidth - units.gu(2)
                 height: width
                 radius: 'small'
-                backgroundColor: theme.palette.normal.base
+                backgroundColor: 'transparent'
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
-                    source: modelData.artUrl || ''
+                    source: modelData.hasArt ? modelData.artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     asynchronous: true
                 }
             }
@@ -435,6 +430,7 @@ Page {
                 playback.playFrom([songs[rowIndex]], 0)
             }
             formatDuration: libraryPage.formatDuration
+            showArt: true
         }
     }
 
@@ -474,11 +470,11 @@ Page {
                 }
                 width: artistGridView.cellWidth - units.gu(2)
                 height: width
-                radius: 'small'
-                backgroundColor: theme.palette.normal.base
+                relativeRadius: 100
+                backgroundColor: 'transparent'
                 sourceFillMode: LomiriShape.PreserveAspectCrop
                 source: Image {
-                    source: modelData.artUrl || ''
+                    source: modelData.hasArt ? modelData.artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
                     asynchronous: true
                 }
             }

@@ -20,6 +20,8 @@ Item {
     property var playerPageComponent
     property var playlistDetailPageComponent
     property var artistPageComponent
+    property var settingsPageComponent
+    property var aboutPageComponent
     property bool wideMode
 
     // Instance/incubator tracking: pages cannot be reused, only
@@ -34,6 +36,8 @@ Item {
     property var artistIncubator: null
     property var playlistDetailPageInstance: null
     property var playlistDetailIncubator: null
+    property var menuPageInstance: null
+    property var menuIncubator: null
     // Retry budget for rejected column-1 Library mounts (startup race
     // against APL primary-page registration).
     property int libraryMountRetries: 0
@@ -329,6 +333,44 @@ Item {
 
     function closePlayer() {
         pageLayout.removePages(playerPageInstance)
+    }
+
+    function openSettings() {
+        openMenuPage(settingsPageComponent)
+    }
+
+    function openAbout() {
+        openMenuPage(aboutPageComponent)
+    }
+
+    // Settings/About mount from the primary page: on the phone they
+    // stack over Home with the APL back action; on desktop
+    // addPageToCurrentColumn prunes column 1 (the Library), so the
+    // destruction defers to maybeMountLibrary via scheduleCol1Restore
+    // exactly like the album/player close flow - the Library remounts
+    // when the page closes. One shared instance slot: the menu is the
+    // only way to open either page, so they cannot coexist; the
+    // incubator check covers the double-tap window.
+    function openMenuPage(pageComponent) {
+        if (menuPageInstance === null && menuIncubator === null) {
+            var incubator = pageLayout.addPageToCurrentColumn(
+                pageLayout.primaryPage, pageComponent)
+            if (incubator) {
+                menuIncubator = incubator
+                incubator.onStatusChanged = function(status) {
+                    if (status === Component.Ready) {
+                        menuPageInstance = incubator.object
+                        incubator.object.Component.destruction.connect(function() {
+                            menuPageInstance = null
+                            scheduleCol1Restore()
+                        })
+                        menuIncubator = null
+                    } else if (status === Component.Error) {
+                        menuIncubator = null
+                    }
+                }
+            }
+        }
     }
 
     // Single-to-two-column migration: pages born while single-column

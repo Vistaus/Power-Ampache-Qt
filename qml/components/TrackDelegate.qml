@@ -15,22 +15,46 @@ Item {
     property var playTrackCallback
     property var formatDuration
 
+    // Library songs list only: replaces the track-number column with
+    // the song's album art and enriches the subtext with the album
+    // name. Album/playlist hosts keep the number + artist row.
+    property bool showArt: false
+
     height: units.gu(6)
 
-    Label {
-        id: trackNumberLabel
+    Item {
+        id: leadingSlot
         anchors {
             left: parent.left
             leftMargin: units.gu(2)
             verticalCenter: parent.verticalCenter
         }
-        width: units.gu(3)
-        text: modelData.trackNumber
+        width: showArt ? units.gu(4) : units.gu(3)
+        height: units.gu(4)
+
+        Label {
+            id: trackNumberLabel
+            anchors.centerIn: parent
+            visible: !showArt
+            text: modelData.trackNumber
+        }
+
+        Image {
+            anchors.centerIn: parent
+            width: units.gu(4)
+            height: units.gu(4)
+            visible: showArt
+            source: modelData.hasArt
+                    ? modelData.imageUrl
+                    : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+        }
     }
 
     Column {
         anchors {
-            left: trackNumberLabel.right
+            left: leadingSlot.right
             leftMargin: units.gu(1)
             right: durationLabel.left
             rightMargin: units.gu(1)
@@ -45,7 +69,9 @@ Item {
 
         Label {
             width: parent.width
-            text: modelData.artistName
+            text: showArt
+                  ? modelData.artistName + ' - ' + modelData.albumName
+                  : modelData.artistName
             fontSize: 'small'
             elide: Text.ElideRight
         }

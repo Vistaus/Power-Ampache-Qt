@@ -24,22 +24,13 @@ Item {
             top: parent.top
         }
         height: width
-        color: theme.palette.normal.base
+        color: 'transparent'
 
         Image {
             anchors.fill: parent
-            source: artUrl
-            visible: artUrl !== ''
+            source: hasArt ? artUrl : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
-        }
-
-        Icon {
-            anchors.centerIn: parent
-            width: units.gu(6)
-            height: units.gu(6)
-            name: 'stock_music'
-            visible: artUrl === ''
         }
     }
 

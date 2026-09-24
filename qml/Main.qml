@@ -39,6 +39,12 @@ MainView {
         return minutes + ':' + (remainder < 10 ? '0' : '') + remainder
     }
 
+    function logoutToLogin() {
+        engine.stopEverything()
+        wideModeAllowed = false
+        pageLayout.primaryPageSource = loginPageComponent
+    }
+
     AdaptivePageLayout {
         id: pageLayout
         anchors {
@@ -88,6 +94,8 @@ MainView {
         playerPageComponent: playerPageComponent
         playlistDetailPageComponent: playlistDetailPageComponent
         artistPageComponent: artistPageComponent
+        settingsPageComponent: settingsPageComponent
+        aboutPageComponent: aboutPageComponent
         wideMode: root.wideMode
     }
 
@@ -156,6 +164,8 @@ MainView {
             pythonBridge: python
             mainView: root
             albumRowDelegate: albumRowComponent
+            openSettingsCallback: navBar.openSettings
+            openAboutCallback: navBar.openAbout
         }
     }
     Component { id: albumPageComponent; AlbumPage { pythonBridge: python; playback: engine; formatDuration: root.formatDuration } }
@@ -191,6 +201,19 @@ MainView {
             playback: engine
             formatDuration: root.formatDuration
         }
+    }
+
+    Component {
+        id: settingsPageComponent
+        SettingsPage {
+            pythonBridge: python
+            logoutCallback: function() { root.logoutToLogin() }
+        }
+    }
+
+    Component {
+        id: aboutPageComponent
+        AboutPage { pythonBridge: python }
     }
 
     Component {
