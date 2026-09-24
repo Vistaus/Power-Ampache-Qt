@@ -124,7 +124,7 @@ Page {
                     // Text glyph, not an icon theme lookup. Unliked =
                     // baseText, liked = negative (red). One glyph for
                     // both states - the color carries the state.
-                    text: '♥'
+                    text: '♥\uFE0E'
                     fontSize: 'x-large'
                     color: artistPage.artistFlag
                            ? theme.palette.normal.negative

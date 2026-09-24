@@ -17,7 +17,7 @@ Item {
     property var model: []
     property string pillColor: theme.palette.normal.base
 
-    height: model.length > 0 ? units.gu(6) : 0
+    height: model.length > 0 ? units.gu(5) : 0
     visible: model.length > 0
 
     Flickable {

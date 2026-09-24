@@ -135,7 +135,7 @@ Page {
                     // Text glyph, not an icon theme lookup. Unliked =
                     // baseText, liked = negative (red). One glyph for
                     // both states - the color carries the state.
-                    text: '♥'
+                    text: '♥\uFE0E'
                     fontSize: 'x-large'
                     color: albumPage.albumFlag
                            ? theme.palette.normal.negative
@@ -186,18 +186,30 @@ Page {
                 anchors.centerIn: parent
                 color: theme.palette.normal.baseText
 
-                Label {
-                    // Optical centering: the glyph sits left-bottom in
-                    // its em box - offsets nudge it right + up.
+                // Painted triangle, NOT a text glyph: '▶' falls back
+                // to the color emoji font on this platform and ignores
+                // the color property (dark-mode bug). Canvas = themed,
+                // deterministic. Slight rightward optical nudge kept.
+                Canvas {
                     anchors {
+                        verticalCenter: parent.verticalCenter
                         horizontalCenter: parent.horizontalCenter
                         horizontalCenterOffset: units.gu(0.2)
-                        verticalCenter: parent.verticalCenter
-                        verticalCenterOffset: -units.gu(0.2)
                     }
-                    text: '▶'
-                    fontSize: 'large'
-                    color: theme.palette.normal.base
+                    width: units.gu(2.2)
+                    height: units.gu(2.6)
+                    antialiasing: true
+                    onPaint: {
+                        var ctx = getContext('2d')
+                        ctx.reset()
+                        ctx.fillStyle = theme.palette.normal.base
+                        ctx.beginPath()
+                        ctx.moveTo(0, 0)
+                        ctx.lineTo(0, height)
+                        ctx.lineTo(width, height / 2)
+                        ctx.closePath()
+                        ctx.fill()
+                    }
                 }
 
                 MouseArea {
