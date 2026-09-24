@@ -965,3 +965,52 @@ def logout():
         return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)
+
+
+def getArtistInfo(artistId):
+    "Artist header: songCount + genre names + flag from the cached ArtistEntity row (local read, no network; the row is persisted by getArtistsPage/getArtistAlbums)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT songCount, genre, flag FROM ArtistEntity WHERE id = ?',
+                (str(artistId),)
+            ).fetchone()
+            if row is None:
+                return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False}
+            genres = []
+            try:
+                parsed = json.loads(row[1])
+                genres = [entry['name'] for entry in parsed
+                          if isinstance(entry, dict) and 'name' in entry]
+            except (ValueError, TypeError):
+                pass
+            return {'ok': True, 'songCount': int(row[0]), 'genres': genres,
+                    'flag': bool(row[2])}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def flagArtist(artistId, flagged):
+    "Like/unlike the artist: server flag + verified re-fetch (client.flag) which write-through refreshes the cached ArtistEntity. Returns the fresh flag."
+    try:
+        client = getClient()
+        entity = client.flag('artist', artistId, bool(flagged))
+        return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getArtistSongs(artistId):
+    "All songs of one artist for play-all: write-through fetch, read back from the cache ordered by searchTitle. Same dict shape as getAlbumSongs."
+    try:
+        client = getClient()
+        songs = client.getArtistSongs(artistId)
+        return {'ok': True, 'songs': [_songDict(song) for song in songs]}
+    except Exception as exception:
+        return _errorDict(exception)
