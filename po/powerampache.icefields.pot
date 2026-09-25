@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 16:33+0000\n"
+"POT-Creation-Date: 2026-09-25 17:31+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,7 +25,7 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:527 ../qml/pages/LibraryPage.qml:138
+#: ../qml/components/NavBar.qml:527 ../qml/pages/LibraryPage.qml:142
 msgid "Library"
 msgstr ""
 
@@ -80,7 +80,7 @@ msgstr ""
 msgid "Genre"
 msgstr ""
 
-#: ../qml/components/SongInfoPanel.qml:82 ../qml/pages/AlbumPage.qml:106
+#: ../qml/components/SongInfoPanel.qml:82 ../qml/pages/AlbumPage.qml:107
 msgid "Year"
 msgstr ""
 
@@ -212,98 +212,117 @@ msgstr ""
 msgid "Free as in Freedom"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:57 ../qml/pages/PlayerPage.qml:36
+#: ../qml/pages/AlbumPage.qml:58 ../qml/pages/PlayerPage.qml:36
 msgid "Close"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:121 ../qml/pages/ArtistPage.qml:111
-#: ../qml/pages/LibraryPage.qml:564 ../qml/pages/PlaylistDetailPage.qml:76
+#: ../qml/pages/AlbumPage.qml:122 ../qml/pages/ArtistPage.qml:112
+#: ../qml/pages/LibraryPage.qml:576 ../qml/pages/PlaylistDetailPage.qml:77
 msgid "Songs"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:160
+#: ../qml/pages/AlbumPage.qml:161
 msgid "Total Time"
+msgstr ""
+
+#: ../qml/pages/AlbumPage.qml:243 ../qml/pages/PlaylistDetailPage.qml:186
+msgid "No songs"
+msgstr ""
+
+#: ../qml/pages/ArtistPage.qml:260 ../qml/pages/LibraryPage.qml:563
+msgid "No albums"
 msgstr ""
 
 #: ../qml/pages/ErrorPage.qml:10
 msgid "Could not open the local database"
 msgstr ""
 
-#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:32
+#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:48
 #: ../qml/pages/LoginPage.qml:22 powerampache.desktop.in.h:1
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:153
+#: ../qml/pages/HomePage.qml:169
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:154
+#: ../qml/pages/HomePage.qml:170
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:155
+#: ../qml/pages/HomePage.qml:171
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:156
+#: ../qml/pages/HomePage.qml:172
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:157
+#: ../qml/pages/HomePage.qml:173
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:158
+#: ../qml/pages/HomePage.qml:174
 msgid "Random"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:169
+#: ../qml/pages/LibraryPage.qml:173
 msgid "Search Playlists"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:170
+#: ../qml/pages/LibraryPage.qml:174
 msgid "Search Albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:171
+#: ../qml/pages/LibraryPage.qml:175
 msgid "Search Songs"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:172
+#: ../qml/pages/LibraryPage.qml:176
 msgid "Search Artists"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:295
+#: ../qml/pages/LibraryPage.qml:299
 msgid "tracks"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:310 ../qml/pages/LibraryPage.qml:379
-#: ../qml/pages/LibraryPage.qml:439 ../qml/pages/LibraryPage.qml:524
-msgid "No results"
-msgstr ""
-
-#: ../qml/pages/LibraryPage.qml:400 ../qml/pages/LibraryPage.qml:545
+#: ../qml/pages/LibraryPage.qml:388 ../qml/pages/LibraryPage.qml:517
 msgid "Load more"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:508 ../qml/pages/SettingsPage.qml:313
+#: ../qml/pages/LibraryPage.qml:488 ../qml/pages/SettingsPage.qml:313
 msgid "albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:509 ../qml/pages/SettingsPage.qml:312
+#: ../qml/pages/LibraryPage.qml:489 ../qml/pages/SettingsPage.qml:312
 msgid "songs"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:562
-msgid "Playlists"
+#: ../qml/pages/LibraryPage.qml:559
+msgid "No results"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:563
-msgid "Albums"
+#: ../qml/pages/LibraryPage.qml:561
+msgid "No playlists"
 msgstr ""
 
 #: ../qml/pages/LibraryPage.qml:565
+msgid "Nothing played yet"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:566
+msgid "No artists"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:574
+msgid "Playlists"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:575
+msgid "Albums"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:577
 msgid "Artists"
 msgstr ""
 
