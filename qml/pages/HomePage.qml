@@ -25,6 +25,21 @@ Page {
     property string username: ''
     property string serverUrl: ''
     property int pendingFetches: 0
+    property bool homeSpinnerArmed: false
+    onPendingFetchesChanged: {
+        if (pendingFetches > 0) {
+            homeSpinnerArmed = false
+            homeSpinnerTimer.restart()
+        } else {
+            homeSpinnerTimer.stop()
+            homeSpinnerArmed = false
+        }
+    }
+    Timer {
+        id: homeSpinnerTimer
+        interval: 1500
+        onTriggered: homePage.homeSpinnerArmed = true
+    }
     property string avatarArtUrl: ''
     property bool avatarHasArt: false
 
@@ -165,8 +180,8 @@ Page {
 
     ActivityIndicator {
         anchors.centerIn: homeFlickable
-        running: homePage.pendingFetches > 0
-        visible: homePage.pendingFetches > 0
+        running: homePage.pendingFetches > 0 && homePage.homeSpinnerArmed
+        visible: running
     }
 
     Component.onCompleted: {

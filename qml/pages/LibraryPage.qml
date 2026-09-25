@@ -551,14 +551,12 @@ Page {
                     : libraryHeader.sections.selectedIndex === 2
                       ? libraryPage.recentSongs.length === 0
                       : libraryPage.artists.length === 0)
-        // Browse sections only: a settled-empty section shows its
-        // message. Search mode keeps today's blank-when-empty — the
-        // gate below RETURNS '' while searchActive (an ungated message
-        // would show 'No playlists' under a settled-empty search, and
-        // would flash during the debounce window before any search
-        // has run); the spinner still shows while a search runs.
+        // A settled-empty view shows its message. Search mode shows
+        // 'No results' — parity with the inline labels this overlay
+        // replaced (they keyed on the same searchActive &&
+        // !searchRunning && empty condition).
         emptyMessage: libraryPage.searchActive
-                      ? ''
+                      ? i18n.tr('No results')
                       : (libraryHeader.sections.selectedIndex === 0
                          ? i18n.tr('No playlists')
                          : libraryHeader.sections.selectedIndex === 1

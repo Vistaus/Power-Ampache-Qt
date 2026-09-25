@@ -22,13 +22,32 @@ Item {
     property bool empty: false
     // Message shown when empty and not busy ('' hides the message).
     property string emptyMessage: ''
+    // Spinner delay: a fetch in flight for less than delayMs never
+    // shows the spinner — fast loads must not flash it.
+    property int delayMs: 1500
+    // True once busy has been held continuously for delayMs.
+    property bool spinnerArmed: false
+    onBusyChanged: {
+        if (busy) {
+            spinnerArmed = false
+            delayTimer.restart()
+        } else {
+            delayTimer.stop()
+            spinnerArmed = false
+        }
+    }
+    Timer {
+        id: delayTimer
+        interval: viewState.delayMs
+        onTriggered: viewState.spinnerArmed = true
+    }
 
     visible: empty && (busy || emptyMessage !== '')
 
     ActivityIndicator {
         anchors.centerIn: parent
-        running: viewState.busy
-        visible: viewState.busy
+        running: viewState.busy && viewState.spinnerArmed
+        visible: running
     }
 
     Label {
