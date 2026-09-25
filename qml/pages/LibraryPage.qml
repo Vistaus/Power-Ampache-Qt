@@ -38,6 +38,8 @@ Page {
     property bool artistsLoaded: false
     property bool albumsFetching: false
     property bool artistsFetching: false
+    property bool playlistsFetching: false
+    property bool songsFetching: false
     property int albumsOffset: 0
     property int artistsOffset: 0
 
@@ -73,7 +75,9 @@ Page {
     }
 
     function loadRecentSongs() {
+        libraryPage.songsFetching = true
         pythonBridge.call('bridge.getRecentSongs', [50], function(result) {
+            libraryPage.songsFetching = false
             if (result && result.ok) {
                 libraryPage.recentSongs = result.songs
                 console.log('libraryPage: recent songs rows=' + result.songs.length)
@@ -305,14 +309,6 @@ Page {
         }
     }
 
-    Label {
-        anchors.centerIn: playlistListView
-        text: i18n.tr('No results')
-        visible: libraryHeader.sections.selectedIndex === 0
-                 && libraryPage.searchActive && !libraryPage.searchRunning
-                 && libraryPage.searchResults.length === 0
-    }
-
     GridView {
         id: albumGridView
         anchors {
@@ -374,14 +370,6 @@ Page {
         }
     }
 
-    Label {
-        anchors.centerIn: albumGridView
-        text: i18n.tr('No results')
-        visible: libraryHeader.sections.selectedIndex === 1
-                 && libraryPage.searchActive && !libraryPage.searchRunning
-                 && libraryPage.searchResults.length === 0
-    }
-
     Item {
         id: loadMoreAlbumsButton
         anchors {
@@ -432,14 +420,6 @@ Page {
             formatDuration: libraryPage.formatDuration
             showArt: true
         }
-    }
-
-    Label {
-        anchors.centerIn: recentSongsListView
-        text: i18n.tr('No results')
-        visible: libraryHeader.sections.selectedIndex === 2
-                 && libraryPage.searchActive && !libraryPage.searchRunning
-                 && libraryPage.searchResults.length === 0
     }
 
     GridView {
@@ -519,14 +499,6 @@ Page {
         }
     }
 
-    Label {
-        anchors.centerIn: artistGridView
-        text: i18n.tr('No results')
-        visible: libraryHeader.sections.selectedIndex === 3
-                 && libraryPage.searchActive && !libraryPage.searchRunning
-                 && libraryPage.searchResults.length === 0
-    }
-
     Item {
         id: loadMoreArtistsButton
         anchors {
@@ -554,6 +526,48 @@ Page {
         }
     }
 
+    ViewState {
+        anchors {
+            top: searchRow.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        busy: libraryPage.searchActive
+              ? libraryPage.searchRunning
+              : (libraryHeader.sections.selectedIndex === 0
+                 ? libraryPage.playlistsFetching
+                 : libraryHeader.sections.selectedIndex === 1
+                   ? libraryPage.albumsFetching
+                   : libraryHeader.sections.selectedIndex === 2
+                     ? libraryPage.songsFetching
+                     : libraryPage.artistsFetching)
+        empty: libraryPage.searchActive
+               ? libraryPage.searchResults.length === 0
+               : (libraryHeader.sections.selectedIndex === 0
+                  ? libraryPage.playlists.length === 0
+                  : libraryHeader.sections.selectedIndex === 1
+                    ? libraryPage.albums.length === 0
+                    : libraryHeader.sections.selectedIndex === 2
+                      ? libraryPage.recentSongs.length === 0
+                      : libraryPage.artists.length === 0)
+        // Browse sections only: a settled-empty section shows its
+        // message. Search mode keeps today's blank-when-empty — the
+        // gate below RETURNS '' while searchActive (an ungated message
+        // would show 'No playlists' under a settled-empty search, and
+        // would flash during the debounce window before any search
+        // has run); the spinner still shows while a search runs.
+        emptyMessage: libraryPage.searchActive
+                      ? ''
+                      : (libraryHeader.sections.selectedIndex === 0
+                         ? i18n.tr('No playlists')
+                         : libraryHeader.sections.selectedIndex === 1
+                           ? i18n.tr('No albums')
+                           : libraryHeader.sections.selectedIndex === 2
+                             ? i18n.tr('Nothing played yet')
+                             : i18n.tr('No artists'))
+    }
+
     Component.onCompleted: {
         // sections is read-only: populate the model imperatively.
         // Assigning the model resets selectedIndex, so the default
@@ -565,7 +579,9 @@ Page {
             i18n.tr('Artists')
         ]
         libraryHeader.sections.selectedIndex = 0
+        libraryPage.playlistsFetching = true
         pythonBridge.call('bridge.getPlaylists', [], function(result) {
+            libraryPage.playlistsFetching = false
             if (result && result.ok) {
                 libraryPage.playlists = result.playlists
             }

@@ -28,6 +28,7 @@ Page {
     // returns them; never re-sort. This same array is handed to
     // queueManager.playFrom() on track tap.
     property var tracks: []
+    property bool songsLoading: false
 
     // Header info from the cached PlaylistEntity row.
     property int songCount: 0
@@ -173,6 +174,18 @@ Page {
         }
     }
 
+    ViewState {
+        anchors {
+            top: playlistInfoColumn.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        busy: playlistDetailPage.songsLoading
+        empty: playlistDetailPage.tracks.length === 0
+        emptyMessage: i18n.tr('No songs')
+    }
+
     function playAll() {
         if (playlistDetailPage.tracks.length === 0) {
             console.log('playlistDetailPage: playAll skipped, no tracks loaded')
@@ -190,7 +203,9 @@ Page {
                 playlistDetailPage.playlistHasArt = result.hasArt
             }
         })
+        playlistDetailPage.songsLoading = true
         pythonBridge.call('bridge.getPlaylistSongs', [playlistDetailPage.playlistId], function(result) {
+            playlistDetailPage.songsLoading = false
             if (result && result.ok) {
                 playlistDetailPage.tracks = result.songs
             }
