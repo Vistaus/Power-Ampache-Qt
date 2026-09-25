@@ -50,17 +50,27 @@ Popover {
 
                     Image {
                         id: menuAvatarImage
+                        // Never visible directly - the OpacityMask
+                        // below is the ONLY renderer (a visible square
+                        // Image leaks around the mask: the 1.0.57
+                        // bug, render-proven).
                         anchors.fill: parent
-                        visible: userMenu.avatarHasArt
-                                  && userMenu.avatarArtUrl !== ''
-                        source: visible ? userMenu.avatarArtUrl : ''
+                        visible: false
+                        source: userMenu.avatarHasArt
+                                 && userMenu.avatarArtUrl !== ''
+                                ? userMenu.avatarArtUrl : ''
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
 
                     OpacityMask {
+                        id: menuAvatarMask
                         anchors.fill: parent
-                        visible: menuAvatarImage.visible
+                        // The mask owns rendering: shown only when
+                        // the account has art AND the image loaded.
+                        visible: userMenu.avatarHasArt
+                                 && userMenu.avatarArtUrl !== ''
+                                 && menuAvatarImage.status === Image.Ready
                         source: menuAvatarImage
                         maskSource: Rectangle {
                             width: menuAvatar.width
@@ -74,7 +84,7 @@ Popover {
                         anchors.fill: parent
                         radius: width / 2
                         color: theme.palette.normal.base
-                        visible: !menuAvatarImage.visible
+                        visible: !menuAvatarMask.visible
 
                         Label {
                             anchors.centerIn: parent

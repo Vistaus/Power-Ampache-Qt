@@ -53,17 +53,27 @@ Page {
                     // proof (server placeholder URLs are unconditional).
                     Image {
                         id: avatarImage
+                        // Never visible directly - the OpacityMask
+                        // below is the ONLY renderer (a visible square
+                        // Image leaks around the mask: the 1.0.57
+                        // bug, render-proven).
                         anchors.fill: parent
-                        visible: homePage.avatarHasArt
-                                  && homePage.avatarArtUrl !== ''
-                        source: visible ? homePage.avatarArtUrl : ''
+                        visible: false
+                        source: homePage.avatarHasArt
+                                 && homePage.avatarArtUrl !== ''
+                                ? homePage.avatarArtUrl : ''
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
 
                     OpacityMask {
+                        id: avatarMask
                         anchors.fill: parent
-                        visible: avatarImage.visible
+                        // The mask owns rendering: shown only when
+                        // the account has art AND the image loaded.
+                        visible: homePage.avatarHasArt
+                                 && homePage.avatarArtUrl !== ''
+                                 && avatarImage.status === Image.Ready
                         source: avatarImage
                         maskSource: Rectangle {
                             width: avatarCircle.width
@@ -79,7 +89,7 @@ Page {
                         anchors.fill: parent
                         radius: width / 2
                         color: theme.palette.normal.base
-                        visible: !avatarImage.visible
+                        visible: !avatarMask.visible
 
                         Label {
                             anchors.centerIn: parent
