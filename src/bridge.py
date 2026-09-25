@@ -708,7 +708,15 @@ def getStreamUrl(songId, stats=None):
     session token - never log it, never persist it."""
     try:
         client = getClient()
-        url = client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats)
+        bitrate = _streamingBitrate()
+        url = client.getStreamUrl(songId, bitrate=bitrate, stats=stats)
+        # Diagnostic (strip before store release): the URL itself is
+        # never logged (live session token - repo rule 4). The boolean
+        # records whether the built URL contains BOTH id= and filter=
+        # for this song (substring test on the in-memory string only).
+        paramsOk = ('&id=' + str(songId)) in url and ('&filter=' + str(songId)) in url
+        print('bridge: stream url built: songId=%s bitrate=%s stats=%s id+filter=%s'
+              % (songId, bitrate, stats, paramsOk), flush=True)
         return {'ok': True, 'url': url}
     except Exception as exception:
         return _errorDict(exception)
@@ -724,7 +732,18 @@ def getStreamUrls(songIds, stats=None):
     embed the live session token - never log them, never persist them."""
     try:
         client = getClient()
-        urls = [client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats) for songId in songIds]
+        bitrate = _streamingBitrate()
+        urls = [client.getStreamUrl(songId, bitrate=bitrate, stats=stats) for songId in songIds]
+        # Diagnostic (strip before store release): every URL is checked,
+        # only the aggregate boolean is logged - a whole queue (100+
+        # URLs) must not spam the log, and no URL content is ever
+        # printed (live session token - repo rule 4).
+        if urls:
+            allParamsOk = all(
+                ('&id=' + str(songId)) in url and ('&filter=' + str(songId)) in url
+                for url, songId in zip(urls, songIds))
+            print('bridge: stream urls built: [%d] all id+filter=%s'
+                  % (len(urls), allParamsOk), flush=True)
         return {'ok': True, 'urls': urls}
     except Exception as exception:
         return _errorDict(exception)
