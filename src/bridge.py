@@ -269,9 +269,26 @@ def _albumList(fetcher):
         return _errorDict(exception)
 
 
+def _currentUsername():
+    """The stored credentials username, or None when logged out. Passed
+    to every stats call so the server scopes plays to this account
+    (omitting it returns server-wide statistics)."""
+    dbPath = getDbPath()
+    if not os.path.exists(dbPath):
+        return None
+    connection = sqlite3.connect(dbPath)
+    try:
+        row = connection.execute(
+            'SELECT username FROM CredentialsEntity LIMIT 1'
+        ).fetchone()
+        return row[0] if row else None
+    finally:
+        connection.close()
+
+
 def getRecentAlbums(limit=_DEFAULT_LIMIT):
     "Home row 1: recently played."
-    return _albumList(lambda client: client.getRecentAlbums(limit=limit))
+    return _albumList(lambda client: client.getRecentAlbums(username=_currentUsername(), limit=limit))
 
 
 def getFavouriteAlbums():
@@ -305,22 +322,22 @@ def getFavouriteAlbums():
 
 def getFrequentAlbums(limit=_DEFAULT_LIMIT):
     "Home row 3: frequently played."
-    return _albumList(lambda client: client.getFrequentAlbums(limit=limit))
+    return _albumList(lambda client: client.getFrequentAlbums(username=_currentUsername(), limit=limit))
 
 
 def getHighestAlbums(limit=_DEFAULT_LIMIT):
     "Home row 4: highest rated."
-    return _albumList(lambda client: client.getHighestAlbums(limit=limit))
+    return _albumList(lambda client: client.getHighestAlbums(username=_currentUsername(), limit=limit))
 
 
 def getNewestAlbums(limit=_DEFAULT_LIMIT):
     "Home row 5: newly added."
-    return _albumList(lambda client: client.getNewestAlbums(limit=limit))
+    return _albumList(lambda client: client.getNewestAlbums(username=_currentUsername(), limit=limit))
 
 
 def getRandomAlbums(limit=_DEFAULT_LIMIT):
     "Home row 6: random."
-    return _albumList(lambda client: client.getRandomAlbums(limit=limit))
+    return _albumList(lambda client: client.getRandomAlbums(username=_currentUsername(), limit=limit))
 
 
 def getPlaylists():
@@ -429,7 +446,7 @@ def getRecentSongs(limit=50):
     "Library Songs section: recently played, capped, never a full sync."
     try:
         client = getClient()
-        songs = client.getRecentSongs(limit=limit)
+        songs = client.getRecentSongs(username=_currentUsername(), limit=limit)
         return {'ok': True, 'songs': [_songDict(song) for song in songs]}
     except Exception as exception:
         return _errorDict(exception)
