@@ -817,19 +817,6 @@ def getServerInfo():
         return _errorDict(exception)
 
 
-def getAppInfo():
-    "About page: app title + version from the installed manifest.json (click root, one level above src/)."
-    try:
-        manifestPath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), '..', 'manifest.json')
-        with open(manifestPath, 'r') as manifestFile:
-            manifest = json.load(manifestFile)
-        return {'ok': True, 'title': manifest.get('title', ''),
-                'version': manifest.get('version', '')}
-    except Exception as exception:
-        return _errorDict(exception)
-
-
 def getStreamingQuality():
     "Current stored streaming quality, RAW: 0 = lossless (original quality). ORIGINAL QUALITY (0) is the default when nothing is stored — a fresh install must not force a transcode; the schema column default (320) is not consulted. Must NOT reuse _streamingBitrate - it maps the stored 0 to None for URL building, and this function must tell 'nothing stored' (0 default) apart from '0 stored' (also 0, same UI outcome) while never collapsing to 320."
     try:
@@ -1097,5 +1084,23 @@ def flagPlaylist(playlistId, flagged):
         client = getClient()
         entity = client.flag('playlist', playlistId, bool(flagged))
         return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getThemeSetting():
+    "Current theme choice ('system', 'light' or 'dark'); dark by default."
+    return {'ok': True, 'theme': _getAppSettings().get('theme', 'dark')}
+
+
+def setThemeSetting(theme):
+    "Persist the theme choice in settings.json (cached dict updated in place, so the change applies to every later dict build without restart)."
+    try:
+        settings = _getAppSettings()
+        settings['theme'] = theme
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(settings, settingsFile)
+        return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)

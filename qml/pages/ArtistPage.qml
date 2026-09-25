@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import "../components"
 
 // Artist drill-down, header redesigned after the PA2 artist screen:
 // fixed header = scrollable genre chips, song count + like (flag)
@@ -52,6 +53,7 @@ Page {
         id: artistInfoColumn
         anchors {
             top: artistHeader.bottom
+            topMargin: units.gu(1)
             left: parent.left
             right: parent.right
         }
@@ -119,21 +121,10 @@ Page {
                 width: units.gu(4)
                 height: units.gu(4)
 
-                Label {
+                HeartButton {
                     anchors.centerIn: parent
-                    // Text glyph, not an icon theme lookup. Unliked =
-                    // baseText, liked = negative (red). One glyph for
-                    // both states - the color carries the state.
-                    text: '♥'
-                    fontSize: 'x-large'
-                    color: artistPage.artistFlag
-                           ? theme.palette.normal.negative
-                           : theme.palette.normal.baseText
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
+                    liked: artistPage.artistFlag
+                    onToggled: {
                         var newFlag = !artistPage.artistFlag
                         artistPage.pythonBridge.call('bridge.flagArtist',
                             [artistPage.artistId, newFlag], function(result) {
@@ -162,19 +153,30 @@ Page {
                 anchors.centerIn: parent
                 color: theme.palette.normal.baseText
 
-                Label {
-                    // Optical centering: the glyph sits left-bottom in
-                    // its em box - offsets nudge it right + up. Tune
-                    // the two gu values by eye if needed.
+                // Painted triangle, NOT a text glyph: '▶' falls back
+                // to the color emoji font on this platform and ignores
+                // the color property (dark-mode bug). Canvas = themed,
+                // deterministic. Slight rightward optical nudge kept.
+                Canvas {
                     anchors {
+                        verticalCenter: parent.verticalCenter
                         horizontalCenter: parent.horizontalCenter
                         horizontalCenterOffset: units.gu(0.2)
-                        verticalCenter: parent.verticalCenter
-                        verticalCenterOffset: -units.gu(0.2)
                     }
-                    text: '▶'
-                    fontSize: 'large'
-                    color: theme.palette.normal.base
+                    width: units.gu(2.2)
+                    height: units.gu(2.6)
+                    antialiasing: true
+                    onPaint: {
+                        var ctx = getContext('2d')
+                        ctx.reset()
+                        ctx.fillStyle = theme.palette.normal.base
+                        ctx.beginPath()
+                        ctx.moveTo(0, 0)
+                        ctx.lineTo(0, height)
+                        ctx.lineTo(width, height / 2)
+                        ctx.closePath()
+                        ctx.fill()
+                    }
                 }
 
                 MouseArea {
@@ -195,7 +197,7 @@ Page {
         }
         clip: true
         cellWidth: parent.width / 2
-        cellHeight: cellWidth * 14 / 11
+        cellHeight: cellWidth * 13 / 11
         model: artistPage.albums
 
         delegate: Item {
@@ -230,7 +232,7 @@ Page {
                     rightMargin: units.gu(1)
                 }
                 text: modelData.name
-                fontSize: 'medium'
+                fontSize: 'small'
                 font.bold: true
                 elide: Text.ElideRight
                 maximumLineCount: 2
