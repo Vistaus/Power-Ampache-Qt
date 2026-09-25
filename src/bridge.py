@@ -1175,7 +1175,7 @@ def setThemeSetting(theme):
 
 
 def getScaleSetting():
-    "Current UI scale choice for the desktop launcher ('1', '1.25', '1.5' or '2'); 1 by default."
+    "Current UI scale choice for the desktop launcher ('1', '1.5', '1.7' or '2'); 1 by default."
     return {'ok': True, 'scale': _getAppSettings().get('uiScale', '1')}
 
 

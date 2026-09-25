@@ -113,8 +113,8 @@ Page {
             Repeater {
                 model: [
                     { label: i18n.tr('100%'), value: '1' },
-                    { label: i18n.tr('125%'), value: '1.25' },
                     { label: i18n.tr('150%'), value: '1.5' },
+                    { label: i18n.tr('170%'), value: '1.7' },
                     { label: i18n.tr('200%'), value: '2' }
                 ]
                 delegate: Standard {
@@ -125,7 +125,9 @@ Page {
                             'bridge.setScaleSetting',
                             [modelData.value],
                             function(result) {
-                                if (!result || !result.ok) {
+                                if (result && result.ok) {
+                                    PopupUtils.open(scaleRestartDialogComponent)
+                                } else {
                                     console.log('settings: scale save failed: '
                                                 + (result ? result.message : 'null'))
                                 }
@@ -144,14 +146,6 @@ Page {
                         color: theme.palette.normal.baseText
                     }
                 }
-            }
-
-            Label {
-                // Restart-applied: the launcher reads the key at startup and
-                // exports QT_SCALE_FACTOR before the engine starts.
-                text: i18n.tr('Takes effect after restart')
-                fontSize: 'small'
-                color: theme.palette.normal.baseText
             }
 
             Header { text: i18n.tr('Streaming') }
@@ -285,6 +279,19 @@ Page {
             Button {
                 text: i18n.tr('Cancel')
                 onClicked: PopupUtils.close(clearConfirmDialog)
+            }
+        }
+    }
+
+    Component {
+        id: scaleRestartDialogComponent
+        Dialog {
+            id: scaleRestartDialog
+            title: i18n.tr('Restart required')
+            text: i18n.tr('Restart the app to apply the new UI scale.')
+            Button {
+                text: i18n.tr('OK')
+                onClicked: PopupUtils.close(scaleRestartDialog)
             }
         }
     }
