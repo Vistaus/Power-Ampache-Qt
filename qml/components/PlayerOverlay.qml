@@ -297,6 +297,7 @@ Item {
             id: queuePanel
             playback: overlayRoot.playback
             overlayRoot: overlayRoot
+            formatDuration: overlayRoot.formatDuration
             anchors {
                 top: overlayHeader.bottom
                 left: parent.left

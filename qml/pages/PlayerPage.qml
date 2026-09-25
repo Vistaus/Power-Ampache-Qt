@@ -109,6 +109,7 @@ Page {
     QueuePanel {
         id: queuePanel
         playback: playerPage.playback
+        formatDuration: playerPage.formatDuration
         anchors {
             top: playerPageHeader.bottom
             left: parent.left

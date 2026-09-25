@@ -64,6 +64,7 @@ Item {
         Label {
             width: parent.width
             text: modelData.title
+            font.bold: true
             elide: Text.ElideRight
         }
 

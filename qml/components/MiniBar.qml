@@ -29,14 +29,43 @@ Rectangle {
         // window bottom otherwise.
         bottom: (navBar !== null && navBar.visible) ? navBar.top : parent.bottom
     }
-    height: units.gu(6)
+    height: units.gu(8)
     color: theme.palette.normal.base
+
+    // Album cover, nearly filling the bar height, with a thin frame.
+    // Declared BEFORE the MouseArea: the drag/tap handle stays on top,
+    // so tapping the cover opens the player too.
+    Rectangle {
+        id: miniBarCoverFrame
+        anchors {
+            left: parent.left
+            leftMargin: units.gu(1)
+            verticalCenter: parent.verticalCenter
+        }
+        width: units.gu(7)
+        height: units.gu(7)
+        color: 'transparent'
+        border.width: 1
+        border.color: theme.palette.normal.baseText
+
+        Image {
+            anchors {
+                fill: parent
+                margins: units.gu(0.25)
+            }
+            source: playback.currentSong !== null && playback.currentSong.hasArt
+                    ? playback.currentSong.imageUrl
+                    : Qt.resolvedUrl('../../assets/fallback/ic_speaker_colored_432px.svg')
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+        }
+    }
 
     Column {
         id: miniBarText
         anchors {
-            left: parent.left
-            leftMargin: units.gu(2)
+            left: miniBarCoverFrame.right
+            leftMargin: units.gu(1)
             right: miniBarControls.left
             rightMargin: units.gu(1)
             verticalCenter: parent.verticalCenter
@@ -44,15 +73,15 @@ Rectangle {
 
         Label {
             width: parent.width
-            text: playback.currentSong !== null ? playback.currentSong.title : ''
-            font.bold: true
+            text: playback.currentSong !== null ? playback.currentSong.artistName : ''
+            fontSize: 'small'
             elide: Text.ElideRight
         }
 
         Label {
             width: parent.width
-            text: playback.currentSong !== null ? playback.currentSong.artistName : ''
-            fontSize: 'small'
+            text: playback.currentSong !== null ? playback.currentSong.title : ''
+            font.bold: true
             elide: Text.ElideRight
         }
     }

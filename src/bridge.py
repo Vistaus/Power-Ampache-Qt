@@ -817,19 +817,6 @@ def getServerInfo():
         return _errorDict(exception)
 
 
-def getAppInfo():
-    "About page: app title + version from the installed manifest.json (click root, one level above src/)."
-    try:
-        manifestPath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), '..', 'manifest.json')
-        with open(manifestPath, 'r') as manifestFile:
-            manifest = json.load(manifestFile)
-        return {'ok': True, 'title': manifest.get('title', ''),
-                'version': manifest.get('version', '')}
-    except Exception as exception:
-        return _errorDict(exception)
-
-
 def getStreamingQuality():
     "Current stored streaming quality, RAW: 0 = lossless (original quality). ORIGINAL QUALITY (0) is the default when nothing is stored — a fresh install must not force a transcode; the schema column default (320) is not consulted. Must NOT reuse _streamingBitrate - it maps the stored 0 to None for URL building, and this function must tell 'nothing stored' (0 default) apart from '0 stored' (also 0, same UI outcome) while never collapsing to 320."
     try:
@@ -962,6 +949,158 @@ def logout():
             finally:
                 connection.close()
         _threadLocal.client = None
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getArtistInfo(artistId):
+    "Artist header: songCount + genre names + flag from the cached ArtistEntity row (local read, no network; the row is persisted by getArtistsPage/getArtistAlbums)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False,
+                    'artUrl': '', 'hasArt': False}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT songCount, genre, flag, artUrl FROM ArtistEntity WHERE id = ?',
+                (str(artistId),)
+            ).fetchone()
+            if row is None:
+                return {'ok': True, 'songCount': 0, 'genres': [], 'flag': False,
+                        'artUrl': '', 'hasArt': False}
+            genres = []
+            try:
+                parsed = json.loads(row[1])
+                genres = [entry['name'] for entry in parsed
+                          if isinstance(entry, dict) and 'name' in entry]
+            except (ValueError, TypeError):
+                pass
+            return {'ok': True, 'songCount': int(row[0]), 'genres': genres,
+                    'flag': bool(row[2]), 'artUrl': row[3],
+                    'hasArt': _artistHasArt(artistId)}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def flagArtist(artistId, flagged):
+    "Like/unlike the artist: server flag + verified re-fetch (client.flag) which write-through refreshes the cached ArtistEntity. Returns the fresh flag."
+    try:
+        client = getClient()
+        entity = client.flag('artist', artistId, bool(flagged))
+        return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getArtistSongs(artistId):
+    "All songs of one artist for play-all: write-through fetch, read back from the cache ordered by searchTitle. Same dict shape as getAlbumSongs."
+    try:
+        client = getClient()
+        songs = client.getArtistSongs(artistId)
+        return {'ok': True, 'songs': [_songDict(song) for song in songs]}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getAlbumInfo(albumId):
+    "Album header: artist, year, total time (seconds), song count, genre + featured artist name lists, flag + art from the cached AlbumEntity row (local read, no network)."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'artistName': '', 'year': 0, 'time': 0,
+                    'songCount': 0, 'genres': [], 'artists': [],
+                    'flag': False, 'artUrl': '', 'hasArt': False}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT artistName, year, time, songCount, genre, artists, '
+                'flag, artUrl FROM AlbumEntity WHERE id = ?',
+                (str(albumId),)
+            ).fetchone()
+            if row is None:
+                return {'ok': True, 'artistName': '', 'year': 0, 'time': 0,
+                        'songCount': 0, 'genres': [], 'artists': [],
+                        'flag': False, 'artUrl': '', 'hasArt': False}
+            def _names(fragment):
+                try:
+                    parsed = json.loads(fragment)
+                    return [entry['name'] for entry in parsed
+                            if isinstance(entry, dict) and 'name' in entry]
+                except (ValueError, TypeError):
+                    return []
+            return {'ok': True, 'artistName': row[0], 'year': int(row[1]),
+                    'time': int(row[2]), 'songCount': int(row[3]),
+                    'genres': _names(row[4]), 'artists': _names(row[5]),
+                    'flag': bool(row[6]), 'artUrl': row[7],
+                    'hasArt': _albumHasArt(albumId)}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def flagAlbum(albumId, flagged):
+    "Like/unlike the album: server flag + verified re-fetch (client.flag) which write-through refreshes the cached AlbumEntity. Returns the fresh flag."
+    try:
+        client = getClient()
+        entity = client.flag('album', albumId, bool(flagged))
+        return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getPlaylistInfo(playlistId):
+    "Playlist header: song count + flag + art from the cached PlaylistEntity row (local read, no network). items is nullable - None means 0."
+    try:
+        dbPath = getDbPath()
+        if not os.path.exists(dbPath):
+            return {'ok': True, 'songCount': 0, 'flag': False,
+                    'artUrl': '', 'hasArt': False}
+        connection = sqlite3.connect(dbPath)
+        try:
+            row = connection.execute(
+                'SELECT items, flag, artUrl FROM PlaylistEntity WHERE id = ?',
+                (str(playlistId),)
+            ).fetchone()
+            if row is None:
+                return {'ok': True, 'songCount': 0, 'flag': False,
+                        'artUrl': '', 'hasArt': False}
+            return {'ok': True, 'songCount': int(row[0] or 0),
+                    'flag': bool(row[1]), 'artUrl': row[2],
+                    'hasArt': _playlistHasArt(playlistId)}
+        finally:
+            connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def flagPlaylist(playlistId, flagged):
+    "Like/unlike the playlist: server flag + verified re-fetch (client.flag) which write-through refreshes the cached PlaylistEntity. Returns the fresh flag."
+    try:
+        client = getClient()
+        entity = client.flag('playlist', playlistId, bool(flagged))
+        return {'ok': True, 'flag': bool(entity.flag)}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getThemeSetting():
+    "Current theme choice ('system', 'light' or 'dark'); dark by default."
+    return {'ok': True, 'theme': _getAppSettings().get('theme', 'dark')}
+
+
+def setThemeSetting(theme):
+    "Persist the theme choice in settings.json (cached dict updated in place, so the change applies to every later dict build without restart)."
+    try:
+        settings = _getAppSettings()
+        settings['theme'] = theme
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(settings, settingsFile)
         return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)

@@ -110,6 +110,20 @@ MainView {
         enabled: root.wideModeAllowed && !root.wideMode
     }
 
+    // Theme application: 'dark' -> SuruDark, 'light' -> Ambiance,
+    // 'system' -> untouched (the phone's platform integration follows
+    // the OS; desktop has none, so the toolkit default stays).
+    // Theme.name is settable at runtime - applied live, no restart.
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            Theme.name = 'Lomiri.Components.Themes.SuruDark'
+        } else if (theme === 'light') {
+            Theme.name = 'Lomiri.Components.Themes.Ambiance'
+        }
+        console.log('main: theme applied=' + theme
+                    + ' Theme.name=' + Theme.name)
+    }
+
     Python {
         id: python
 
@@ -121,6 +135,11 @@ MainView {
                         pageLayout.primaryPageSource = errorPageComponent
                         return
                     }
+                    python.call('bridge.getThemeSetting', [], function(themeResult) {
+                        if (themeResult && themeResult.ok) {
+                            root.applyTheme(themeResult.theme)
+                        }
+                    })
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
                             root.wideModeAllowed = true
@@ -170,7 +189,7 @@ MainView {
     }
     Component { id: albumPageComponent; AlbumPage { pythonBridge: python; playback: engine; formatDuration: root.formatDuration } }
 
-    Component { id: artistPageComponent; ArtistPage { pythonBridge: python; openAlbumCallback: navBar.openAlbumFromArtist } }
+    Component { id: artistPageComponent; ArtistPage { pythonBridge: python; playback: engine; openAlbumCallback: navBar.openAlbumFromArtist } }
 
     Component {
         id: playerPageComponent
