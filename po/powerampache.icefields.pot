@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:19+0000\n"
+"POT-Creation-Date: 2026-09-25 16:33+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,11 +21,11 @@ msgstr ""
 msgid "Internal error"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:471
+#: ../qml/components/NavBar.qml:512
 msgid "Home"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:486 ../qml/pages/LibraryPage.qml:138
+#: ../qml/components/NavBar.qml:527 ../qml/pages/LibraryPage.qml:138
 msgid "Library"
 msgstr ""
 
@@ -148,11 +148,11 @@ msgstr ""
 msgid "Replay gain"
 msgstr ""
 
-#: ../qml/components/UserMenu.qml:77 ../qml/pages/SettingsPage.qml:44
+#: ../qml/components/UserMenu.qml:117 ../qml/pages/SettingsPage.qml:45
 msgid "Settings"
 msgstr ""
 
-#: ../qml/components/UserMenu.qml:87 ../qml/pages/AboutPage.qml:17
+#: ../qml/components/UserMenu.qml:127 ../qml/pages/AboutPage.qml:17
 msgid "About"
 msgstr ""
 
@@ -229,32 +229,32 @@ msgstr ""
 msgid "Could not open the local database"
 msgstr ""
 
-#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:29
+#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:32
 #: ../qml/pages/LoginPage.qml:22 powerampache.desktop.in.h:1
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:105
+#: ../qml/pages/HomePage.qml:153
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:106
+#: ../qml/pages/HomePage.qml:154
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:107
+#: ../qml/pages/HomePage.qml:155
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:108
+#: ../qml/pages/HomePage.qml:156
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:109
+#: ../qml/pages/HomePage.qml:157
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:110
+#: ../qml/pages/HomePage.qml:158
 msgid "Random"
 msgstr ""
 
@@ -287,11 +287,11 @@ msgstr ""
 msgid "Load more"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:508 ../qml/pages/SettingsPage.qml:259
+#: ../qml/pages/LibraryPage.qml:508 ../qml/pages/SettingsPage.qml:313
 msgid "albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:509 ../qml/pages/SettingsPage.qml:258
+#: ../qml/pages/LibraryPage.qml:509 ../qml/pages/SettingsPage.qml:312
 msgid "songs"
 msgstr ""
 
@@ -363,74 +363,106 @@ msgstr ""
 msgid "Lossless (original)"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:62
+#: ../qml/pages/SettingsPage.qml:63
 msgid "Theme"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:66
+#: ../qml/pages/SettingsPage.qml:67
 msgid "Dark"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:67
+#: ../qml/pages/SettingsPage.qml:68
 msgid "Light"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:68
+#: ../qml/pages/SettingsPage.qml:69
 msgid "System (phone)"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:110
+#: ../qml/pages/SettingsPage.qml:111
+msgid "UI Scale (desktop only)"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:115
+msgid "100%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:116
+msgid "150%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:117
+msgid "170%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:118
+msgid "200%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:151
 msgid "Streaming"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:145
+#: ../qml/pages/SettingsPage.qml:186
 msgid "Artwork"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:159
+#: ../qml/pages/SettingsPage.qml:200
 msgid "Use server placeholder art"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:161
+#: ../qml/pages/SettingsPage.qml:202
 msgid "Switch on if your server provides a custom placeholder art"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:191
+#: ../qml/pages/SettingsPage.qml:232
 msgid "Cache"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:194
+#: ../qml/pages/SettingsPage.qml:235
 msgid "Cached library"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:199 ../qml/pages/SettingsPage.qml:228
+#: ../qml/pages/SettingsPage.qml:240 ../qml/pages/SettingsPage.qml:269
 msgid "Clear cache"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:206
+#: ../qml/pages/SettingsPage.qml:247
 msgid "Log out"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:222
+#: ../qml/pages/SettingsPage.qml:263
 msgid "Counting…"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:229
+#: ../qml/pages/SettingsPage.qml:270
 msgid "Removes all cached music data. Your login and settings are kept."
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:231
+#: ../qml/pages/SettingsPage.qml:272
 msgid "Clear"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:239
+#: ../qml/pages/SettingsPage.qml:280
 msgid "Cancel"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:260
+#: ../qml/pages/SettingsPage.qml:290
+msgid "Restart required"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:291
+msgid "Restart the app to apply the new UI scale."
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:293
+msgid "OK"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:314
 msgid "artists"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:262
+#: ../qml/pages/SettingsPage.qml:316
 msgid "Unavailable"
 msgstr ""
