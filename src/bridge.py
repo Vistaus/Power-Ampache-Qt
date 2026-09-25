@@ -1172,3 +1172,21 @@ def setThemeSetting(theme):
         return {'ok': True}
     except Exception as exception:
         return _errorDict(exception)
+
+
+def getScaleSetting():
+    "Current UI scale choice for the desktop launcher ('1', '1.25', '1.5' or '2'); 1 by default."
+    return {'ok': True, 'scale': _getAppSettings().get('uiScale', '1')}
+
+
+def setScaleSetting(scale):
+    "Persist the UI scale choice in settings.json (cached dict updated in place). The launcher reads it at startup and exports QT_SCALE_FACTOR - restart-applied by design."
+    try:
+        settings = _getAppSettings()
+        settings['uiScale'] = scale
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(settings, settingsFile)
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
