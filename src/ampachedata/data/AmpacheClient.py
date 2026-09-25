@@ -14,6 +14,7 @@ from ..domain.OperationResult import OperationResult
 from ..domain.PingResult import PingResult
 from ..domain.Playlist import Playlist
 from ..domain.Song import Song
+from ..domain.User import User
 from .ApiMethod import ApiMethod
 from .ErrorCode import ErrorCode
 from .ObjectType import ObjectType
@@ -28,6 +29,7 @@ from .db.mappers.PlaylistMapper import mapPlaylist
 from .db.mappers.PlaylistSongMapper import mapPlaylistSong
 from .db.mappers.SessionMapper import mapSession
 from .db.mappers.SongMapper import mapSong
+from .db.mappers.UserMapper import mapUser
 from .db.repositories.AlbumRepository import AlbumRepository
 from .db.repositories.ArtistRepository import ArtistRepository
 from .db.repositories.CredentialsRepository import CredentialsRepository
@@ -36,6 +38,7 @@ from .db.repositories.PlaylistRepository import PlaylistRepository
 from .db.repositories.PlaylistSongRepository import PlaylistSongRepository
 from .db.repositories.SessionRepository import SessionRepository
 from .db.repositories.SongRepository import SongRepository
+from .db.repositories.UserRepository import UserRepository
 from .errors import AmpacheError, CacheVerificationError, InvalidHandshakeError, raiseForError
 
 
@@ -58,6 +61,7 @@ class AmpacheClient:
         self._historyRepository = HistoryRepository(self._database)
         self._playlistRepository = PlaylistRepository(self._database)
         self._playlistSongRepository = PlaylistSongRepository(self._database)
+        self._userRepository = UserRepository(self._database)
         self._lastPayload = None
 
     @property
@@ -688,6 +692,24 @@ class AmpacheClient:
             self._playlistSongRepository.upsertPlaylistSongs(playlistSongRows)
         return self._songRepository.getPlaylistSongs(playlistId)
 
+    def getUser(self, username=None) -> User:
+        """user: write-through for one user object. Omitting username
+        returns the CURRENT api user's public information (spec); passing
+        it asks for that user (the API user needs appropriate access).
+        fetch -> map -> upsert -> read back from the DB only.
+
+        The response's `auth` field is a LIVE SESSION TOKEN and is
+        deliberately dropped by the mapper — it is never persisted
+        outside SessionEntity. Envelope: a single object, no list."""
+        params = self._listParams(username=username)
+        payload = self._sendWithAuth(ApiMethod.USER, params)
+        row = mapUser(payload)
+        self._userRepository.upsertUsers([row])
+        user = self._userRepository.getUser(row["id"])
+        if user is None:
+            raise AmpacheError("user " + row["id"] + " missing from DB after write-through")
+        return user
+
     def getStreamUrl(self, songId, format=None, bitrate=None, offset=None, stats=None) -> str:
         """stream: build the playback URL for one song. NO network call, NO DB
         write — pure URL construction (see _mediaUrl)."""
@@ -703,6 +725,36 @@ class AmpacheClient:
         return self._mediaUrl(
             ApiMethod.DOWNLOAD, songId, format=format, bitrate=bitrate, stats=stats,
         )
+
+    def getArtUrl(self, objectType: ObjectType, objectId, size=None) -> str:
+        """get_art: build the art-image URL for one library object. NO
+        network call, NO DB write — pure URL construction (the art-image
+        sibling of _mediaUrl).
+
+        Both `id` and `filter` carry the object UID — same rule and same
+        reason as _mediaUrl (Nextcloud Music reads `id` and rejects
+        `filter`-only URLs; Ampache reads `filter`; each backend ignores
+        the parameter it does not know, so both ride for maximal
+        compatibility). `size` is a WxH string ('640x480'), appended only
+        when not None. Types are limited to the four this library models
+        (ObjectType); the spec's search/podcast types have no entity here.
+        Nothing is persisted and the URL is rebuilt per request — the
+        token travels as a query parameter so header-less image loaders
+        work (same deliberate choice as _mediaUrl)."""
+        credentials = self._credentialsRepository.getCredentials()
+        if credentials is None:
+            raise AmpacheError("no credentials stored in CredentialsEntity; serverUrl unknown")
+        token = self._sessionManager.ensureSession()
+        params = {
+            "action": ApiMethod.GET_ART.value,
+            "auth": token,
+            "id": str(objectId),
+            "filter": str(objectId),
+            "type": ObjectType(objectType).value,
+        }
+        if size is not None:
+            params["size"] = str(size)
+        return credentials.serverUrl.rstrip("/") + ENDPOINT_PATH + "?" + urlencode(params)
 
     def _mediaUrl(self, action, songId, format=None, bitrate=None, offset=None,
                   stats=None) -> str:
@@ -725,11 +777,14 @@ class AmpacheClient:
         the caller's responsibility; the library never logs or stores it.
 
         type is ALWAYS 'song': the spec warns that playlist/search types
-        return a RANDOM object, so they are not exposed. `filter` carries the
-        song UID (the `id` parameter is deprecated, removed in API9). Optional
-        params are appended only when not None (0 is a real value for
-        stats/offset and IS appended); `format` is free-form ('raw' = original
-        file); `bitrate` is passed through as-is."""
+        return a RANDOM object, so they are not exposed. Both `id` and
+        `filter` carry the song UID: Nextcloud Music reads `id` and rejects
+        `filter`-only URLs, Ampache reads `filter` — each backend ignores the
+        parameter it does not know (backend-developer-confirmed), so both ride
+        for maximal compatibility. Revisit if a future API version removes
+        `id`. Optional params are appended only when not None (0 is a real
+        value for stats/offset and IS appended); `format` is free-form ('raw'
+        = original file); `bitrate` is passed through as-is."""
         credentials = self._credentialsRepository.getCredentials()
         if credentials is None:
             raise AmpacheError("no credentials stored in CredentialsEntity; serverUrl unknown")
@@ -737,6 +792,7 @@ class AmpacheClient:
         params = {
             "action": action.value,
             "auth": token,
+            "id": str(songId),
             "filter": str(songId),
             "type": "song",
         }
