@@ -92,9 +92,18 @@ Item {
                 if (status === Component.Ready) {
                     libraryPageInstance = incubator.object
                     libraryBirthWide = false
+                    var theLibraryPage = incubator.object
                     incubator.object.Component.destruction.connect(function() {
-                        libraryPageInstance = null
-                        libraryBirthWide = false
+                        // Conditional nulling: a deferred destruction can
+                        // fire after a NEWER page of the same kind took
+                        // this slot - the dying page must not clobber the
+                        // live reference (device-proven: the late null
+                        // made the restore timer read a clean guard set
+                        // and the Library mount destroyed the new page).
+                        if (libraryPageInstance === theLibraryPage) {
+                            libraryPageInstance = null
+                            libraryBirthWide = false
+                        }
                     })
                     libraryIncubator = null
                 } else if (status === Component.Error) {
@@ -121,9 +130,18 @@ Item {
                     // single-born or the next grow breaks (blank
                     // column 1).
                     libraryBirthWide = wideMode
+                    var theLibraryPage = incubator.object
                     incubator.object.Component.destruction.connect(function() {
-                        libraryPageInstance = null
-                        libraryBirthWide = false
+                        // Conditional nulling: a deferred destruction can
+                        // fire after a NEWER page of the same kind took
+                        // this slot - the dying page must not clobber the
+                        // live reference (device-proven: the late null
+                        // made the restore timer read a clean guard set
+                        // and the Library mount destroyed the new page).
+                        if (libraryPageInstance === theLibraryPage) {
+                            libraryPageInstance = null
+                            libraryBirthWide = false
+                        }
                     })
                     libraryIncubator = null
                 } else if (status === Component.Error) {
@@ -175,9 +193,16 @@ Item {
                         incubator.object.wideMount = true
                         incubator.object.closeCallback = closeAlbum
                     }
+                    var theAlbumPage = incubator.object
                     incubator.object.Component.destruction.connect(function() {
-                        albumPageInstance = null
-                        albumBirthWide = false
+                        // Conditional nulling - see the library handler.
+                        // The restore stays UNCONDITIONAL: an honest
+                        // vacancy must still trigger it, and a live
+                        // successor makes maybeMountLibrary a no-op.
+                        if (albumPageInstance === theAlbumPage) {
+                            albumPageInstance = null
+                            albumBirthWide = false
+                        }
                         scheduleCol1Restore()
                     })
                     albumIncubator = null
@@ -232,8 +257,12 @@ Item {
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     playlistDetailPageInstance = incubator.object
+                    var thePlaylistDetailPage = incubator.object
                     incubator.object.Component.destruction.connect(function() {
-                        playlistDetailPageInstance = null
+                        // Conditional nulling - see the library handler.
+                        if (playlistDetailPageInstance === thePlaylistDetailPage) {
+                            playlistDetailPageInstance = null
+                        }
                     })
                     playlistDetailIncubator = null
                 } else if (status === Component.Error) {
@@ -260,8 +289,12 @@ Item {
             incubator.onStatusChanged = function(status) {
                 if (status === Component.Ready) {
                     artistPageInstance = incubator.object
+                    var theArtistPage = incubator.object
                     incubator.object.Component.destruction.connect(function() {
-                        artistPageInstance = null
+                        // Conditional nulling - see the library handler.
+                        if (artistPageInstance === theArtistPage) {
+                            artistPageInstance = null
+                        }
                     })
                     artistIncubator = null
                 } else if (status === Component.Error) {
@@ -317,9 +350,13 @@ Item {
                             incubator.object.wideMount = true
                             incubator.object.closeCallback = closePlayer
                         }
+                        var thePlayerPage = incubator.object
                         incubator.object.Component.destruction.connect(function() {
-                            playerPageInstance = null
-                            playerBirthWide = false
+                            // Conditional nulling - see the library handler.
+                            if (playerPageInstance === thePlayerPage) {
+                                playerPageInstance = null
+                                playerBirthWide = false
+                            }
                             scheduleCol1Restore()
                         })
                         playerIncubator = null
@@ -360,8 +397,12 @@ Item {
                 incubator.onStatusChanged = function(status) {
                     if (status === Component.Ready) {
                         menuPageInstance = incubator.object
+                        var theMenuPage = incubator.object
                         incubator.object.Component.destruction.connect(function() {
-                            menuPageInstance = null
+                            // Conditional nulling - see the library handler.
+                            if (menuPageInstance === theMenuPage) {
+                                menuPageInstance = null
+                            }
                             scheduleCol1Restore()
                         })
                         menuIncubator = null
