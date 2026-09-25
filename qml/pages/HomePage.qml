@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import QtGraphicalEffects 1.0
 import "../components"
 import Lomiri.Components.Popups 1.3
 
@@ -23,6 +24,8 @@ Page {
     property var openAboutCallback: null
     property string username: ''
     property string serverUrl: ''
+    property string avatarArtUrl: ''
+    property bool avatarHasArt: false
 
     header: PageHeader {
         id: pageHeader
@@ -38,20 +41,53 @@ Page {
                 }
                 spacing: units.gu(1.5)
 
-                Rectangle {
+                Item {
                     id: avatarCircle
                     width: units.gu(4)
                     height: units.gu(4)
-                    radius: width / 2
-                    color: theme.palette.normal.base
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Label {
-                        anchors.centerIn: parent
-                        text: homePage.username
-                              ? homePage.username.charAt(0).toUpperCase() : '?'
-                        fontSize: 'medium'
-                        color: theme.palette.normal.baseText
+                    // Real avatar: circular crop via OpacityMask.
+                    // Visible only when the server says art exists AND
+                    // a URL came back - the art string alone is never
+                    // proof (server placeholder URLs are unconditional).
+                    Image {
+                        id: avatarImage
+                        anchors.fill: parent
+                        visible: homePage.avatarHasArt
+                                  && homePage.avatarArtUrl !== ''
+                        source: visible ? homePage.avatarArtUrl : ''
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
+
+                    OpacityMask {
+                        anchors.fill: parent
+                        visible: avatarImage.visible
+                        source: avatarImage
+                        maskSource: Rectangle {
+                            width: avatarCircle.width
+                            height: avatarCircle.height
+                            radius: avatarCircle.width / 2
+                            visible: false
+                        }
+                    }
+
+                    // Initials placeholder - the original look, shown
+                    // whenever there is no real avatar.
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        color: theme.palette.normal.base
+                        visible: !avatarImage.visible
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: homePage.username
+                                  ? homePage.username.charAt(0).toUpperCase() : '?'
+                            fontSize: 'medium'
+                            color: theme.palette.normal.baseText
+                        }
                     }
 
                     MouseArea {
@@ -60,6 +96,8 @@ Page {
                             var menu = PopupUtils.open(userMenuComponent, avatarCircle)
                             menu.username = homePage.username
                             menu.serverUrl = homePage.serverUrl
+                            menu.avatarArtUrl = homePage.avatarArtUrl
+                            menu.avatarHasArt = homePage.avatarHasArt
                             menu.openSettingsCallback = homePage.openSettingsCallback
                             menu.openAboutCallback = homePage.openAboutCallback
                         }
@@ -132,6 +170,15 @@ Page {
                 homePage.username = userInfo.username
                 homePage.serverUrl = userInfo.serverUrl
             }
+        })
+        pythonBridge.call('bridge.getUser', [], function(userResult) {
+            if (userResult && userResult.ok) {
+                homePage.username = userResult.username
+                homePage.avatarArtUrl = userResult.artUrl || ''
+                homePage.avatarHasArt = userResult.hasArt
+            }
+            // Offline or error: getUserInfo's values stand and the
+            // avatar stays on the initials placeholder.
         })
         // Fire all six fetches at once; each row renders as its
         // data arrives. Favourites answers from the local DB.

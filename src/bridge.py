@@ -813,6 +813,38 @@ def getUserInfo():
         return _errorDict(exception)
 
 
+def getUser():
+    "Full user object for the CURRENT account (network fetch, write-through to UserEntity). artUrl + hasArt drive the avatar. has_art is read from the raw response (lastPayload) because the mapper drops it by design - a non-empty art URL alone never proves art exists (the server builds placeholder image.php URLs unconditionally)."
+    try:
+        client = getClient()
+        user = client.getUser()
+        rawHasArt = (client.lastPayload or {}).get('has_art')
+        if rawHasArt is None:
+            # Missing flag: default artful (do not punish rows the
+            # server never labeled) - same convention as _captureHasArt.
+            hasArt = True
+        else:
+            try:
+                hasArt = bool(int(rawHasArt))
+            except (TypeError, ValueError):
+                hasArt = rawHasArt in (True, 'true', 'True', 1, '1')
+        return {
+            'ok': True,
+            'id': user.id,
+            'username': user.username,
+            'fullName': user.fullName,
+            'email': user.email,
+            'website': user.website,
+            'state': user.state,
+            'city': user.city,
+            'access': user.access,
+            'artUrl': user.artUrl,
+            'hasArt': hasArt,
+        }
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def getServerInfo():
     "About page: server address + API version + catalog counts from SessionEntity (local read, no network)."
     try:

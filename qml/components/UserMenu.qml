@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import QtGraphicalEffects 1.0
 import Lomiri.Components.Popups 1.3
 import Lomiri.Components.ListItems 1.3
 
@@ -18,6 +19,8 @@ Popover {
 
     property string username: ''
     property string serverUrl: ''
+    property string avatarArtUrl: ''
+    property bool avatarHasArt: false
     property var openSettingsCallback: null
     property var openAboutCallback: null
 
@@ -39,21 +42,48 @@ Popover {
                 }
                 spacing: units.gu(1.5)
 
-                Rectangle {
+                Item {
                     id: menuAvatar
                     width: units.gu(5)
                     height: units.gu(5)
-                    radius: width / 2
-                    color: theme.palette.normal.base
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Label {
-                        anchors.centerIn: parent
-                        text: userMenu.username
-                              ? userMenu.username.charAt(0).toUpperCase()
-                              : '?'
-                        fontSize: 'large'
-                        color: theme.palette.normal.baseText
+                    Image {
+                        id: menuAvatarImage
+                        anchors.fill: parent
+                        visible: userMenu.avatarHasArt
+                                  && userMenu.avatarArtUrl !== ''
+                        source: visible ? userMenu.avatarArtUrl : ''
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
+
+                    OpacityMask {
+                        anchors.fill: parent
+                        visible: menuAvatarImage.visible
+                        source: menuAvatarImage
+                        maskSource: Rectangle {
+                            width: menuAvatar.width
+                            height: menuAvatar.height
+                            radius: menuAvatar.width / 2
+                            visible: false
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        color: theme.palette.normal.base
+                        visible: !menuAvatarImage.visible
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: userMenu.username
+                                  ? userMenu.username.charAt(0).toUpperCase()
+                                  : '?'
+                            fontSize: 'large'
+                            color: theme.palette.normal.baseText
+                        }
                     }
                 }
 
