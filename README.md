@@ -17,6 +17,10 @@ the middle.
 
 Planned: downloads for offline listening.
 
+The app is under active development, with more features on the way.
+If you run into any issues, please report them and they will be
+addressed.
+
 ## Features
 
 - Library browsing: playlists, albums, songs and artists, with cover
@@ -33,8 +37,9 @@ Planned: downloads for offline listening.
 
 ## Install
 
-On Ubuntu Touch, get the app from the OpenStore (first release is
-being prepared; the link lands here the day it ships).
+On Ubuntu Touch, download the app from the OpenStore:
+
+[![OpenStore](https://open-store.io/badges/en_US.svg)](https://open-store.io/app/powerampache.icefields/)
 
 On Linux desktop, grab the AppImage (released alongside the first
 version).

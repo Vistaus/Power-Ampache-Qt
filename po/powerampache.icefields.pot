@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 19:24+0000\n"
+"POT-Creation-Date: 2026-09-28 21:32+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -154,6 +154,44 @@ msgstr ""
 
 #: ../qml/components/UserMenu.qml:127 ../qml/pages/AboutPage.qml:17
 msgid "About"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:16
+msgid "Welcome to Power Ampache"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:23
+msgid "Coming soon:"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:30
+msgid "● Star ratings for songs, albums and playlists"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:31
+msgid "● Playlist creation and editing"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:32
+msgid "● Per-song context menu"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:33
+msgid "● Pull-to-refresh on Home and Library"
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:40
+msgid "Planned: downloads for offline listening."
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:47
+msgid ""
+"The app is under active development, with more features on the way. If you "
+"run into any issues, please report them and they will be addressed."
+msgstr ""
+
+#: ../qml/components/WelcomeDialog.qml:51
+msgid "Let's go"
 msgstr ""
 
 #: ../qml/pages/AboutPage.qml:40
