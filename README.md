@@ -8,6 +8,19 @@ internet or your LAN. Your music stays on your server, under your
 control. Nothing is locked in and there is no third party service in
 the middle.
 
+## Coming soon
+
+- Star ratings for songs, albums and playlists
+- Playlist creation and editing
+- Per-song context menu
+- Pull-to-refresh on Home and Library
+
+Planned: downloads for offline listening.
+
+The app is under active development, with more features on the way.
+If you run into any issues, please report them and they will be
+addressed.
+
 ## Features
 
 - Library browsing: playlists, albums, songs and artists, with cover
@@ -24,8 +37,9 @@ the middle.
 
 ## Install
 
-On Ubuntu Touch, get the app from the OpenStore (first release is
-being prepared; the link lands here the day it ships).
+On Ubuntu Touch, download the app from the OpenStore:
+
+[![OpenStore](https://open-store.io/badges/en_US.svg)](https://open-store.io/app/powerampache.icefields/)
 
 On Linux desktop, grab the AppImage (released alongside the first
 version).

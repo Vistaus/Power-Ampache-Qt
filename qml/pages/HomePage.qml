@@ -184,6 +184,11 @@ Page {
         visible: running
     }
 
+    Component {
+        id: welcomeDialogComponent
+        WelcomeDialog { }
+    }
+
     Component.onCompleted: {
         // Background auth: failure must not interrupt browsing.
         // Skip when the login flow just authenticated; reset the
@@ -217,6 +222,14 @@ Page {
         for (var i = 0; i < sectionRepeater.model.length; i++) {
             loadRow(i, sectionRepeater.model[i].functionName)
         }
+        pythonBridge.call('bridge.getWelcomeShown', [], function(welcomeResult) {
+            if (welcomeResult && welcomeResult.ok && !welcomeResult.shown) {
+                // Set the flag BEFORE opening: even if the app dies
+                // mid-display, the dialog never nags again.
+                pythonBridge.call('bridge.setWelcomeShown', [], function() {})
+                PopupUtils.open(welcomeDialogComponent, homePage)
+            }
+        })
     }
 
     function loadRow(rowIndex, functionName) {
