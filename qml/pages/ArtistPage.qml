@@ -29,6 +29,7 @@ Page {
     property var genres: []
     property bool artistFlag: false
     property bool artistSongsLoading: false
+    property bool albumsLoading: false
     property string artistArtUrl: ''
     property bool artistHasArt: false
 
@@ -247,6 +248,18 @@ Page {
         }
     }
 
+    ViewState {
+        anchors {
+            top: artistInfoColumn.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        busy: artistPage.albumsLoading
+        empty: artistPage.albums.length === 0
+        emptyMessage: i18n.tr('No albums')
+    }
+
     function playAll() {
         if (artistPage.artistSongsLoading) {
             return
@@ -273,7 +286,9 @@ Page {
                 artistPage.artistHasArt = result.hasArt
             }
         })
+        artistPage.albumsLoading = true
         pythonBridge.call('bridge.getArtistAlbums', [artistPage.artistId], function(result) {
+            artistPage.albumsLoading = false
             if (result && result.ok) {
                 artistPage.albums = result.albums
             }

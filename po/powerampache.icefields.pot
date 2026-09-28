@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:19+0000\n"
+"POT-Creation-Date: 2026-09-25 17:43+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,11 +21,11 @@ msgstr ""
 msgid "Internal error"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:471
+#: ../qml/components/NavBar.qml:512
 msgid "Home"
 msgstr ""
 
-#: ../qml/components/NavBar.qml:486 ../qml/pages/LibraryPage.qml:138
+#: ../qml/components/NavBar.qml:527 ../qml/pages/LibraryPage.qml:142
 msgid "Library"
 msgstr ""
 
@@ -80,7 +80,7 @@ msgstr ""
 msgid "Genre"
 msgstr ""
 
-#: ../qml/components/SongInfoPanel.qml:82 ../qml/pages/AlbumPage.qml:106
+#: ../qml/components/SongInfoPanel.qml:82 ../qml/pages/AlbumPage.qml:107
 msgid "Year"
 msgstr ""
 
@@ -148,11 +148,11 @@ msgstr ""
 msgid "Replay gain"
 msgstr ""
 
-#: ../qml/components/UserMenu.qml:77 ../qml/pages/SettingsPage.qml:44
+#: ../qml/components/UserMenu.qml:117 ../qml/pages/SettingsPage.qml:45
 msgid "Settings"
 msgstr ""
 
-#: ../qml/components/UserMenu.qml:87 ../qml/pages/AboutPage.qml:17
+#: ../qml/components/UserMenu.qml:127 ../qml/pages/AboutPage.qml:17
 msgid "About"
 msgstr ""
 
@@ -212,98 +212,117 @@ msgstr ""
 msgid "Free as in Freedom"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:57 ../qml/pages/PlayerPage.qml:36
+#: ../qml/pages/AlbumPage.qml:58 ../qml/pages/PlayerPage.qml:36
 msgid "Close"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:121 ../qml/pages/ArtistPage.qml:111
-#: ../qml/pages/LibraryPage.qml:564 ../qml/pages/PlaylistDetailPage.qml:76
+#: ../qml/pages/AlbumPage.qml:122 ../qml/pages/ArtistPage.qml:112
+#: ../qml/pages/LibraryPage.qml:576 ../qml/pages/PlaylistDetailPage.qml:77
 msgid "Songs"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:160
+#: ../qml/pages/AlbumPage.qml:161
 msgid "Total Time"
+msgstr ""
+
+#: ../qml/pages/AlbumPage.qml:243 ../qml/pages/PlaylistDetailPage.qml:186
+msgid "No songs"
+msgstr ""
+
+#: ../qml/pages/ArtistPage.qml:260 ../qml/pages/LibraryPage.qml:563
+msgid "No albums"
 msgstr ""
 
 #: ../qml/pages/ErrorPage.qml:10
 msgid "Could not open the local database"
 msgstr ""
 
-#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:29
+#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:48
 #: ../qml/pages/LoginPage.qml:22 powerampache.desktop.in.h:1
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:105
+#: ../qml/pages/HomePage.qml:169
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:106
+#: ../qml/pages/HomePage.qml:170
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:107
+#: ../qml/pages/HomePage.qml:171
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:108
+#: ../qml/pages/HomePage.qml:172
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:109
+#: ../qml/pages/HomePage.qml:173
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:110
+#: ../qml/pages/HomePage.qml:174
 msgid "Random"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:169
+#: ../qml/pages/LibraryPage.qml:173
 msgid "Search Playlists"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:170
+#: ../qml/pages/LibraryPage.qml:174
 msgid "Search Albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:171
+#: ../qml/pages/LibraryPage.qml:175
 msgid "Search Songs"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:172
+#: ../qml/pages/LibraryPage.qml:176
 msgid "Search Artists"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:295
+#: ../qml/pages/LibraryPage.qml:299
 msgid "tracks"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:310 ../qml/pages/LibraryPage.qml:379
-#: ../qml/pages/LibraryPage.qml:439 ../qml/pages/LibraryPage.qml:524
-msgid "No results"
-msgstr ""
-
-#: ../qml/pages/LibraryPage.qml:400 ../qml/pages/LibraryPage.qml:545
+#: ../qml/pages/LibraryPage.qml:388 ../qml/pages/LibraryPage.qml:517
 msgid "Load more"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:508 ../qml/pages/SettingsPage.qml:259
+#: ../qml/pages/LibraryPage.qml:488 ../qml/pages/SettingsPage.qml:313
 msgid "albums"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:509 ../qml/pages/SettingsPage.qml:258
+#: ../qml/pages/LibraryPage.qml:489 ../qml/pages/SettingsPage.qml:312
 msgid "songs"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:562
-msgid "Playlists"
+#: ../qml/pages/LibraryPage.qml:559
+msgid "No results"
 msgstr ""
 
-#: ../qml/pages/LibraryPage.qml:563
-msgid "Albums"
+#: ../qml/pages/LibraryPage.qml:561
+msgid "No playlists"
 msgstr ""
 
 #: ../qml/pages/LibraryPage.qml:565
+msgid "Nothing played yet"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:566
+msgid "No artists"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:574
+msgid "Playlists"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:575
+msgid "Albums"
+msgstr ""
+
+#: ../qml/pages/LibraryPage.qml:577
 msgid "Artists"
 msgstr ""
 
@@ -363,74 +382,106 @@ msgstr ""
 msgid "Lossless (original)"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:62
+#: ../qml/pages/SettingsPage.qml:63
 msgid "Theme"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:66
+#: ../qml/pages/SettingsPage.qml:67
 msgid "Dark"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:67
+#: ../qml/pages/SettingsPage.qml:68
 msgid "Light"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:68
+#: ../qml/pages/SettingsPage.qml:69
 msgid "System (phone)"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:110
+#: ../qml/pages/SettingsPage.qml:111
+msgid "UI Scale (desktop only)"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:115
+msgid "100%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:116
+msgid "150%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:117
+msgid "170%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:118
+msgid "200%"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:151
 msgid "Streaming"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:145
+#: ../qml/pages/SettingsPage.qml:186
 msgid "Artwork"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:159
+#: ../qml/pages/SettingsPage.qml:200
 msgid "Use server placeholder art"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:161
+#: ../qml/pages/SettingsPage.qml:202
 msgid "Switch on if your server provides a custom placeholder art"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:191
+#: ../qml/pages/SettingsPage.qml:232
 msgid "Cache"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:194
+#: ../qml/pages/SettingsPage.qml:235
 msgid "Cached library"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:199 ../qml/pages/SettingsPage.qml:228
+#: ../qml/pages/SettingsPage.qml:240 ../qml/pages/SettingsPage.qml:269
 msgid "Clear cache"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:206
+#: ../qml/pages/SettingsPage.qml:247
 msgid "Log out"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:222
+#: ../qml/pages/SettingsPage.qml:263
 msgid "Counting…"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:229
+#: ../qml/pages/SettingsPage.qml:270
 msgid "Removes all cached music data. Your login and settings are kept."
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:231
+#: ../qml/pages/SettingsPage.qml:272
 msgid "Clear"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:239
+#: ../qml/pages/SettingsPage.qml:280
 msgid "Cancel"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:260
+#: ../qml/pages/SettingsPage.qml:290
+msgid "Restart required"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:291
+msgid "Restart the app to apply the new UI scale."
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:293
+msgid "OK"
+msgstr ""
+
+#: ../qml/pages/SettingsPage.qml:314
 msgid "artists"
 msgstr ""
 
-#: ../qml/pages/SettingsPage.qml:262
+#: ../qml/pages/SettingsPage.qml:316
 msgid "Unavailable"
 msgstr ""

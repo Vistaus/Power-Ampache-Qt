@@ -45,6 +45,15 @@ design conversation when picked up.
   whenever Flatpak is picked up. UT clicks need no work (already
   one-file installers).
 
+- **UI Scale "System default" row** — the shipped scale section
+  (2026-09-25) stores an explicit choice only; the initial state is
+  "unset" (the launcher exports nothing and the session/compositor
+  value applies — Qt default on plain machines). A "System default"
+  row would follow the Theme section's "System" precedent: remove the
+  uiScale key, export nothing, dot sits there when unset — making the
+  radio honest for compositor-scaled users and letting anyone return
+  to the platform default. Parked 2026-09-25 with the feature working.
+
 - **Bitcoin donation link** — pending verification that UT opens
   `bitcoin:` wallet URIs from apps; owner unsure, revisit later.
 
