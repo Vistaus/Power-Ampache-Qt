@@ -180,6 +180,7 @@ MainView {
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
                             pageLayout.primaryPageSource = homePageComponent
+                            root.wideModeFlipRetries = 0
                             root.wideModeFlipPending = true
                             wideModeDelayTimer.restart()
                         } else {
@@ -210,6 +211,7 @@ MainView {
             authenticatedCallback: function() {
                 root.justAuthenticated = true
                 pageLayout.primaryPageSource = homePageComponent
+                root.wideModeFlipRetries = 0
                 root.wideModeFlipPending = true
                 wideModeDelayTimer.restart()
             }
