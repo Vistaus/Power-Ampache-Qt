@@ -29,6 +29,8 @@ MainView {
     height: units.gu(75)
 
     property bool justAuthenticated: false
+    property bool wideModeFlipPending: false
+    property int wideModeFlipRetries: 0
     property bool wideModeAllowed: false
     readonly property bool wideMode: pageLayout.width > units.gu(80) && root.wideModeAllowed
 
@@ -41,6 +43,8 @@ MainView {
 
     function logoutToLogin() {
         engine.stopEverything()
+        wideModeFlipPending = false
+        wideModeDelayTimer.stop()
         wideModeAllowed = false
         pageLayout.primaryPageSource = loginPageComponent
     }
@@ -50,11 +54,30 @@ MainView {
         interval: 300
         repeat: false
         onTriggered: {
-            // Flip only if a home page actually landed: a logout inside
-            // the deferral window must NOT re-enable wide mode on the
-            // login page.
-            if (pageLayout.primaryPageSource === homePageComponent) {
+            if (!root.wideModeFlipPending) {
+                // A logout inside the deferral window cancelled the flip.
+                return
+            }
+            // Flip only once the APL tree has actually settled: the new
+            // primary page exists AND is registered in the layout
+            // (parent non-null - the same settle test maybeMountLibrary
+            // uses in NavBar).
+            if (pageLayout.primaryPage !== null
+                    && pageLayout.primaryPage.parent !== null) {
                 root.wideModeAllowed = true
+                root.wideModeFlipPending = false
+                root.wideModeFlipRetries = 0
+                console.log('main: wide mode enabled after settle')
+            } else if (root.wideModeFlipRetries < 20) {
+                root.wideModeFlipRetries = root.wideModeFlipRetries + 1
+                console.log('main: wide-mode flip deferred, retry '
+                    + root.wideModeFlipRetries)
+                wideModeDelayTimer.restart()
+            } else {
+                // Give up honestly: stay single-column rather than flip
+                // into an unsettled tree.
+                root.wideModeFlipPending = false
+                console.log('main: wide-mode flip gave up after 20 retries')
             }
         }
     }
@@ -157,6 +180,7 @@ MainView {
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
                             pageLayout.primaryPageSource = homePageComponent
+                            root.wideModeFlipPending = true
                             wideModeDelayTimer.restart()
                         } else {
                             root.wideModeAllowed = false
@@ -186,6 +210,7 @@ MainView {
             authenticatedCallback: function() {
                 root.justAuthenticated = true
                 pageLayout.primaryPageSource = homePageComponent
+                root.wideModeFlipPending = true
                 wideModeDelayTimer.restart()
             }
         }
