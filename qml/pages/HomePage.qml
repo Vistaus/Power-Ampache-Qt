@@ -184,6 +184,45 @@ Page {
         visible: running
     }
 
+    Component {
+        id: welcomeDialogComponent
+        Dialog {
+            id: welcomeDialog
+            objectName: 'welcomeDialog'
+            title: i18n.tr('Welcome to Power Ampache')
+
+            Label {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHLeft
+                color: theme.palette.normal.baseText
+                text: i18n.tr('Coming soon:')
+            }
+            Label {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHLeft
+                color: theme.palette.normal.baseText
+                text: i18n.tr('● Star ratings for songs, albums and playlists') + '\n'
+                      + i18n.tr('● Playlist creation and editing') + '\n'
+                      + i18n.tr('● Per-song context menu') + '\n'
+                      + i18n.tr('● Pull-to-refresh on Home and Library')
+            }
+            Label {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHLeft
+                color: theme.palette.normal.baseText
+                text: i18n.tr('Planned: downloads for offline listening.')
+            }
+
+            Button {
+                text: i18n.tr("Let's go")
+                onClicked: PopupUtils.close(welcomeDialog)
+            }
+        }
+    }
+
     Component.onCompleted: {
         // Background auth: failure must not interrupt browsing.
         // Skip when the login flow just authenticated; reset the
@@ -217,6 +256,14 @@ Page {
         for (var i = 0; i < sectionRepeater.model.length; i++) {
             loadRow(i, sectionRepeater.model[i].functionName)
         }
+        pythonBridge.call('bridge.getWelcomeShown', [], function(welcomeResult) {
+            if (welcomeResult && welcomeResult.ok && !welcomeResult.shown) {
+                // Set the flag BEFORE opening: even if the app dies
+                // mid-display, the dialog never nags again.
+                pythonBridge.call('bridge.setWelcomeShown', [], function() {})
+                PopupUtils.open(welcomeDialogComponent, homePage)
+            }
+        })
     }
 
     function loadRow(rowIndex, functionName) {

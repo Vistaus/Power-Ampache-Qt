@@ -1174,6 +1174,24 @@ def setThemeSetting(theme):
         return _errorDict(exception)
 
 
+def getWelcomeShown():
+    "Whether the one-time welcome dialog has already been shown."
+    return {'ok': True, 'shown': _getAppSettings().get('welcomeShown', False)}
+
+
+def setWelcomeShown():
+    "Persist the welcome flag so the dialog never shows again."
+    try:
+        settings = _getAppSettings()
+        settings['welcomeShown'] = True
+        settingsPath = os.path.join(os.path.dirname(getDbPath()), 'settings.json')
+        with open(settingsPath, 'w') as settingsFile:
+            json.dump(settings, settingsFile)
+        return {'ok': True}
+    except Exception as exception:
+        return _errorDict(exception)
+
+
 def getScaleSetting():
     "Current UI scale choice for the desktop launcher ('1', '1.5', '1.7' or '2'); 1 by default."
     return {'ok': True, 'scale': _getAppSettings().get('uiScale', '1')}
