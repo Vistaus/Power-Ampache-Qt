@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 17:43+0000\n"
+"POT-Creation-Date: 2026-09-28 17:53+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:161
+#: ../qml/Main.qml:199
 msgid "Internal error"
 msgstr ""
 
@@ -80,7 +80,7 @@ msgstr ""
 msgid "Genre"
 msgstr ""
 
-#: ../qml/components/SongInfoPanel.qml:82 ../qml/pages/AlbumPage.qml:107
+#: ../qml/components/SongInfoPanel.qml:82 ../qml/pages/AlbumPage.qml:108
 msgid "Year"
 msgstr ""
 
@@ -212,24 +212,24 @@ msgstr ""
 msgid "Free as in Freedom"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:58 ../qml/pages/PlayerPage.qml:36
+#: ../qml/pages/AlbumPage.qml:59 ../qml/pages/PlayerPage.qml:36
 msgid "Close"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:122 ../qml/pages/ArtistPage.qml:112
-#: ../qml/pages/LibraryPage.qml:576 ../qml/pages/PlaylistDetailPage.qml:77
+#: ../qml/pages/AlbumPage.qml:123 ../qml/pages/ArtistPage.qml:113
+#: ../qml/pages/LibraryPage.qml:576 ../qml/pages/PlaylistDetailPage.qml:78
 msgid "Songs"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:161
+#: ../qml/pages/AlbumPage.qml:162
 msgid "Total Time"
 msgstr ""
 
-#: ../qml/pages/AlbumPage.qml:243 ../qml/pages/PlaylistDetailPage.qml:186
+#: ../qml/pages/AlbumPage.qml:244 ../qml/pages/PlaylistDetailPage.qml:187
 msgid "No songs"
 msgstr ""
 
-#: ../qml/pages/ArtistPage.qml:260 ../qml/pages/LibraryPage.qml:563
+#: ../qml/pages/ArtistPage.qml:261 ../qml/pages/LibraryPage.qml:563
 msgid "No albums"
 msgstr ""
 
