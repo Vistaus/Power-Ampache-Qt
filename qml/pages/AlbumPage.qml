@@ -35,6 +35,7 @@ Page {
     // Tracks in the order the bridge returns them; this same array
     // is handed to queueManager.playFrom() on track tap.
     property var tracks: []
+    property bool tracksLoading: false
 
     // Header info from the cached AlbumEntity row.
     property string albumArtistName: ''
@@ -230,6 +231,18 @@ Page {
         }
     }
 
+    ViewState {
+        anchors {
+            top: albumInfoColumn.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        busy: albumPage.tracksLoading
+        empty: albumPage.tracks.length === 0
+        emptyMessage: i18n.tr('No songs')
+    }
+
     function playAll() {
         if (albumPage.tracks.length === 0) {
             console.log('albumPage: playAll skipped, no tracks loaded')
@@ -252,7 +265,9 @@ Page {
                 albumPage.albumHasArt = result.hasArt
             }
         })
+        albumPage.tracksLoading = true
         pythonBridge.call('bridge.getAlbumSongs', [albumPage.albumId], function(result) {
+            albumPage.tracksLoading = false
             if (result && result.ok) {
                 albumPage.tracks = result.songs
             }
