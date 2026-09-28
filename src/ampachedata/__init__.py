@@ -29,17 +29,20 @@ from .domain.Playlist import Playlist
 from .domain.PlaylistSong import PlaylistSong
 from .domain.Session import Session
 from .domain.Song import Song
+from .domain.User import User
 from .data.db.Database import Database
 from .data.db.repositories.ArtistRepository import ArtistRepository
 from .data.db.repositories.AlbumRepository import AlbumRepository
 from .data.db.repositories.SongRepository import SongRepository
 from .data.db.repositories.PlaylistRepository import PlaylistRepository
+from .data.db.repositories.UserRepository import UserRepository
 
 __all__ = [
     "AmpacheClient",
     "Artist",
     "Album",
     "Song",
+    "User",
     "Playlist",
     "PlaylistSong",
     "History",
@@ -54,6 +57,7 @@ __all__ = [
     "AlbumRepository",
     "SongRepository",
     "PlaylistRepository",
+    "UserRepository",
     "storeCredentialsFromPassword",
     "storeCredentialsFromKey",
     "createDatabase",

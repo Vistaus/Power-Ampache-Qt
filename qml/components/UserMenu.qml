@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import QtGraphicalEffects 1.0
 import Lomiri.Components.Popups 1.3
 import Lomiri.Components.ListItems 1.3
 
@@ -18,6 +19,8 @@ Popover {
 
     property string username: ''
     property string serverUrl: ''
+    property string avatarArtUrl: ''
+    property bool avatarHasArt: false
     property var openSettingsCallback: null
     property var openAboutCallback: null
 
@@ -39,21 +42,58 @@ Popover {
                 }
                 spacing: units.gu(1.5)
 
-                Rectangle {
+                Item {
                     id: menuAvatar
                     width: units.gu(5)
                     height: units.gu(5)
-                    radius: width / 2
-                    color: theme.palette.normal.base
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Label {
-                        anchors.centerIn: parent
-                        text: userMenu.username
-                              ? userMenu.username.charAt(0).toUpperCase()
-                              : '?'
-                        fontSize: 'large'
-                        color: theme.palette.normal.baseText
+                    Image {
+                        id: menuAvatarImage
+                        // Never visible directly - the OpacityMask
+                        // below is the ONLY renderer (a visible square
+                        // Image leaks around the mask: the 1.0.57
+                        // bug, render-proven).
+                        anchors.fill: parent
+                        visible: false
+                        source: userMenu.avatarHasArt
+                                 && userMenu.avatarArtUrl !== ''
+                                ? userMenu.avatarArtUrl : ''
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
+
+                    OpacityMask {
+                        id: menuAvatarMask
+                        anchors.fill: parent
+                        // The mask owns rendering: shown only when
+                        // the account has art AND the image loaded.
+                        visible: userMenu.avatarHasArt
+                                 && userMenu.avatarArtUrl !== ''
+                                 && menuAvatarImage.status === Image.Ready
+                        source: menuAvatarImage
+                        maskSource: Rectangle {
+                            width: menuAvatar.width
+                            height: menuAvatar.height
+                            radius: menuAvatar.width / 2
+                            visible: false
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        color: theme.palette.normal.base
+                        visible: !menuAvatarMask.visible
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: userMenu.username
+                                  ? userMenu.username.charAt(0).toUpperCase()
+                                  : '?'
+                            fontSize: 'large'
+                            color: theme.palette.normal.baseText
+                        }
                     }
                 }
 

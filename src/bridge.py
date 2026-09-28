@@ -269,9 +269,26 @@ def _albumList(fetcher):
         return _errorDict(exception)
 
 
+def _currentUsername():
+    """The stored credentials username, or None when logged out. Passed
+    to every stats call so the server scopes plays to this account
+    (omitting it returns server-wide statistics)."""
+    dbPath = getDbPath()
+    if not os.path.exists(dbPath):
+        return None
+    connection = sqlite3.connect(dbPath)
+    try:
+        row = connection.execute(
+            'SELECT username FROM CredentialsEntity LIMIT 1'
+        ).fetchone()
+        return row[0] if row else None
+    finally:
+        connection.close()
+
+
 def getRecentAlbums(limit=_DEFAULT_LIMIT):
     "Home row 1: recently played."
-    return _albumList(lambda client: client.getRecentAlbums(limit=limit))
+    return _albumList(lambda client: client.getRecentAlbums(username=_currentUsername(), limit=limit))
 
 
 def getFavouriteAlbums():
@@ -305,22 +322,22 @@ def getFavouriteAlbums():
 
 def getFrequentAlbums(limit=_DEFAULT_LIMIT):
     "Home row 3: frequently played."
-    return _albumList(lambda client: client.getFrequentAlbums(limit=limit))
+    return _albumList(lambda client: client.getFrequentAlbums(username=_currentUsername(), limit=limit))
 
 
 def getHighestAlbums(limit=_DEFAULT_LIMIT):
     "Home row 4: highest rated."
-    return _albumList(lambda client: client.getHighestAlbums(limit=limit))
+    return _albumList(lambda client: client.getHighestAlbums(username=_currentUsername(), limit=limit))
 
 
 def getNewestAlbums(limit=_DEFAULT_LIMIT):
     "Home row 5: newly added."
-    return _albumList(lambda client: client.getNewestAlbums(limit=limit))
+    return _albumList(lambda client: client.getNewestAlbums(username=_currentUsername(), limit=limit))
 
 
 def getRandomAlbums(limit=_DEFAULT_LIMIT):
     "Home row 6: random."
-    return _albumList(lambda client: client.getRandomAlbums(limit=limit))
+    return _albumList(lambda client: client.getRandomAlbums(username=_currentUsername(), limit=limit))
 
 
 def getPlaylists():
@@ -429,7 +446,7 @@ def getRecentSongs(limit=50):
     "Library Songs section: recently played, capped, never a full sync."
     try:
         client = getClient()
-        songs = client.getRecentSongs(limit=limit)
+        songs = client.getRecentSongs(username=_currentUsername(), limit=limit)
         return {'ok': True, 'songs': [_songDict(song) for song in songs]}
     except Exception as exception:
         return _errorDict(exception)
@@ -691,7 +708,15 @@ def getStreamUrl(songId, stats=None):
     session token - never log it, never persist it."""
     try:
         client = getClient()
-        url = client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats)
+        bitrate = _streamingBitrate()
+        url = client.getStreamUrl(songId, bitrate=bitrate, stats=stats)
+        # Diagnostic (strip before store release): the URL itself is
+        # never logged (live session token - repo rule 4). The boolean
+        # records whether the built URL contains BOTH id= and filter=
+        # for this song (substring test on the in-memory string only).
+        paramsOk = ('&id=' + str(songId)) in url and ('&filter=' + str(songId)) in url
+        print('bridge: stream url built: songId=%s bitrate=%s stats=%s id+filter=%s'
+              % (songId, bitrate, stats, paramsOk), flush=True)
         return {'ok': True, 'url': url}
     except Exception as exception:
         return _errorDict(exception)
@@ -707,7 +732,18 @@ def getStreamUrls(songIds, stats=None):
     embed the live session token - never log them, never persist them."""
     try:
         client = getClient()
-        urls = [client.getStreamUrl(songId, bitrate=_streamingBitrate(), stats=stats) for songId in songIds]
+        bitrate = _streamingBitrate()
+        urls = [client.getStreamUrl(songId, bitrate=bitrate, stats=stats) for songId in songIds]
+        # Diagnostic (strip before store release): every URL is checked,
+        # only the aggregate boolean is logged - a whole queue (100+
+        # URLs) must not spam the log, and no URL content is ever
+        # printed (live session token - repo rule 4).
+        if urls:
+            allParamsOk = all(
+                ('&id=' + str(songId)) in url and ('&filter=' + str(songId)) in url
+                for url, songId in zip(urls, songIds))
+            print('bridge: stream urls built: [%d] all id+filter=%s'
+                  % (len(urls), allParamsOk), flush=True)
         return {'ok': True, 'urls': urls}
     except Exception as exception:
         return _errorDict(exception)
@@ -792,6 +828,38 @@ def getUserInfo():
             return {'ok': True, 'username': row[0], 'serverUrl': row[1]}
         finally:
             connection.close()
+    except Exception as exception:
+        return _errorDict(exception)
+
+
+def getUser():
+    "Full user object for the CURRENT account (network fetch, write-through to UserEntity). artUrl + hasArt drive the avatar. has_art is read from the raw response (lastPayload) because the mapper drops it by design - a non-empty art URL alone never proves art exists (the server builds placeholder image.php URLs unconditionally)."
+    try:
+        client = getClient()
+        user = client.getUser()
+        rawHasArt = (client.lastPayload or {}).get('has_art')
+        if rawHasArt is None:
+            # Missing flag: default artful (do not punish rows the
+            # server never labeled) - same convention as _captureHasArt.
+            hasArt = True
+        else:
+            try:
+                hasArt = bool(int(rawHasArt))
+            except (TypeError, ValueError):
+                hasArt = rawHasArt in (True, 'true', 'True', 1, '1')
+        return {
+            'ok': True,
+            'id': user.id,
+            'username': user.username,
+            'fullName': user.fullName,
+            'email': user.email,
+            'website': user.website,
+            'state': user.state,
+            'city': user.city,
+            'access': user.access,
+            'artUrl': user.artUrl,
+            'hasArt': hasArt,
+        }
     except Exception as exception:
         return _errorDict(exception)
 
