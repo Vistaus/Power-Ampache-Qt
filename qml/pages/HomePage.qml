@@ -186,41 +186,7 @@ Page {
 
     Component {
         id: welcomeDialogComponent
-        Dialog {
-            id: welcomeDialog
-            objectName: 'welcomeDialog'
-            title: i18n.tr('Welcome to Power Ampache')
-
-            Label {
-                width: parent.width
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHLeft
-                color: theme.palette.normal.baseText
-                text: i18n.tr('Coming soon:')
-            }
-            Label {
-                width: parent.width
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHLeft
-                color: theme.palette.normal.baseText
-                text: i18n.tr('● Star ratings for songs, albums and playlists') + '\n'
-                      + i18n.tr('● Playlist creation and editing') + '\n'
-                      + i18n.tr('● Per-song context menu') + '\n'
-                      + i18n.tr('● Pull-to-refresh on Home and Library')
-            }
-            Label {
-                width: parent.width
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHLeft
-                color: theme.palette.normal.baseText
-                text: i18n.tr('Planned: downloads for offline listening.')
-            }
-
-            Button {
-                text: i18n.tr("Let's go")
-                onClicked: PopupUtils.close(welcomeDialog)
-            }
-        }
+        WelcomeDialog { }
     }
 
     Component.onCompleted: {
