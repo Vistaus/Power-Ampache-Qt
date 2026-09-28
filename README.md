@@ -22,27 +22,13 @@ the middle.
 - Light and dark themes
 - Tested against Ampache 7.9.x (API 6) and 8.x (API 8) servers
 
-## Getting started
+## Install
 
-You need an Ampache server you can reach over the network. Enter its
-address, your username and password on the login screen and you are
-in.
+On Ubuntu Touch, get the app from the OpenStore (first release is
+being prepared; the link lands here the day it ships).
 
-### Ubuntu Touch
-
-Build and install the click package with
-[Clickable](https://clickable-ut.dev):
-
-```
-clickable build
-clickable install-phone
-```
-
-### Linux desktop
-
-The AppImage is the desktop release format. Build it from a clickable
-build output with the packaging recipe, or grab a released AppImage
-when one is published.
+On Linux desktop, grab the AppImage (released alongside the first
+version).
 
 ## Development
 
@@ -51,6 +37,14 @@ back end, using the
 [ampachedata](https://github.com/icefields/Ampache-Data-Library)
 library as its data layer (vendored in `src/ampachedata`). The client
 library talks to the Ampache JSON API and keeps a local SQLite cache.
+
+Build from source with
+[Clickable](https://clickable-ut.dev):
+
+```
+clickable build
+clickable install-phone
+```
 
 ## Links
 
