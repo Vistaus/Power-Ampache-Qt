@@ -5,6 +5,7 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
+import QtGraphicalEffects 1.0
 import "../components"
 
 // Album drill-down, header redesigned after the artist page: fixed
@@ -35,6 +36,7 @@ Page {
     // Tracks in the order the bridge returns them; this same array
     // is handed to queueManager.playFrom() on track tap.
     property var tracks: []
+    property bool tracksLoading: false
 
     // Header info from the cached AlbumEntity row.
     property string albumArtistName: ''
@@ -168,38 +170,38 @@ Page {
             width: parent.width
             height: units.gu(9)
 
-            Rectangle {
+            Item {
                 id: playAllButton
                 width: units.gu(7)
                 height: units.gu(7)
-                radius: width / 2
                 anchors.centerIn: parent
-                color: theme.palette.normal.baseText
 
-                // Painted triangle, NOT a text glyph: '▶' falls back
-                // to the color emoji font on this platform and ignores
-                // the color property (dark-mode bug). Canvas = themed,
-                // deterministic. Slight rightward optical nudge kept.
-                Canvas {
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        horizontalCenter: parent.horizontalCenter
-                        horizontalCenterOffset: units.gu(0.2)
-                    }
-                    width: units.gu(2.2)
-                    height: units.gu(2.6)
-                    antialiasing: true
-                    onPaint: {
-                        var ctx = getContext('2d')
-                        ctx.reset()
-                        ctx.fillStyle = theme.palette.normal.base
-                        ctx.beginPath()
-                        ctx.moveTo(0, 0)
-                        ctx.lineTo(0, height)
-                        ctx.lineTo(width, height / 2)
-                        ctx.closePath()
-                        ctx.fill()
-                    }
+                // Glyph asset (black ring + triangle). Hidden: it is the
+                // MASK source, not a renderer (same rule as the avatar:
+                // a visible source under OpacityMask leaks its own color
+                // around the tint).
+                Image {
+                    id: playGlyphMask
+                    anchors.fill: parent
+                    source: Qt.resolvedUrl('../../assets/icons/circle-play.svg')
+                    asynchronous: true
+                    visible: false
+                }
+
+                // Tint source: themed color, REACTIVE on theme change
+                // (declarative palette binding - this is what Canvas
+                // could not do).
+                Rectangle {
+                    id: playGlyphTint
+                    anchors.fill: parent
+                    color: theme.palette.normal.baseText
+                    visible: false
+                }
+
+                OpacityMask {
+                    anchors.fill: parent
+                    source: playGlyphTint
+                    maskSource: playGlyphMask
                 }
 
                 MouseArea {
@@ -230,6 +232,18 @@ Page {
         }
     }
 
+    ViewState {
+        anchors {
+            top: albumInfoColumn.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        busy: albumPage.tracksLoading
+        empty: albumPage.tracks.length === 0
+        emptyMessage: i18n.tr('No songs')
+    }
+
     function playAll() {
         if (albumPage.tracks.length === 0) {
             console.log('albumPage: playAll skipped, no tracks loaded')
@@ -252,7 +266,9 @@ Page {
                 albumPage.albumHasArt = result.hasArt
             }
         })
+        albumPage.tracksLoading = true
         pythonBridge.call('bridge.getAlbumSongs', [albumPage.albumId], function(result) {
+            albumPage.tracksLoading = false
             if (result && result.ok) {
                 albumPage.tracks = result.songs
             }

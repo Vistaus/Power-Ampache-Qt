@@ -24,6 +24,22 @@ Page {
     property var openAboutCallback: null
     property string username: ''
     property string serverUrl: ''
+    property int pendingFetches: 0
+    property bool homeSpinnerArmed: false
+    onPendingFetchesChanged: {
+        if (pendingFetches > 0) {
+            homeSpinnerArmed = false
+            homeSpinnerTimer.restart()
+        } else {
+            homeSpinnerTimer.stop()
+            homeSpinnerArmed = false
+        }
+    }
+    Timer {
+        id: homeSpinnerTimer
+        interval: 1500
+        onTriggered: homePage.homeSpinnerArmed = true
+    }
     property string avatarArtUrl: ''
     property bool avatarHasArt: false
 
@@ -162,6 +178,12 @@ Page {
         }
     }
 
+    ActivityIndicator {
+        anchors.centerIn: homeFlickable
+        running: homePage.pendingFetches > 0 && homePage.homeSpinnerArmed
+        visible: running
+    }
+
     Component.onCompleted: {
         // Background auth: failure must not interrupt browsing.
         // Skip when the login flow just authenticated; reset the
@@ -198,7 +220,9 @@ Page {
     }
 
     function loadRow(rowIndex, functionName) {
+        pendingFetches += 1
         pythonBridge.call(functionName, [], function(result) {
+            pendingFetches -= 1
             if (result && result.ok) {
                 var row = sectionRepeater.itemAt(rowIndex)
                 for (var i = 0; i < result.albums.length; i++) {

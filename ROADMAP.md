@@ -1,71 +1,61 @@
 # ROADMAP
 
-Deferred features — parked here by decision on 2026-09-23 so the main
-line stays focused. Order is not a commitment; each item gets its own
-design conversation when picked up.
+Deferred features, parked here so the main line stays focused. Order is
+not a commitment; each item gets its own design conversation when
+picked up.
 
 ## Later
 
-- **Ratings & favourites** — rate/flag actions in the UI (Song Info
-  already displays the rating row; nothing can set it yet). The library
-  ships `client.rate()` / `client.flag()` — this is app-side wiring
-  plus an ampachedata cache-refresh verification round.
+- **Ratings and favourites.** Rate and flag actions in the UI (Song
+  Info already displays the rating row; nothing can set it yet). The
+  library ships `client.rate()` and `client.flag()`, so this is
+  app-side wiring plus a cache-refresh verification round.
 
-- **Downloads / offline cache** — Sonic's file:// download window
-  pattern: first song streams instantly, rest download ahead. Survives
-  UT suspension for streams (the documented platform limitation our
-  streaming architecture otherwise works around). Biggest lift in the
-  backlog: getDownloadUrl tier, cache dir, eviction, UI.
+- **Downloads / offline cache.** Sonic's file:// download window
+  pattern: first song streams instantly, the rest download ahead.
+  Survives UT suspension for streams, the documented platform
+  limitation the streaming architecture otherwise works around.
+  Biggest lift in the backlog: getDownloadUrl tier, cache dir,
+  eviction, UI.
 
-- **Genre browse** — needs the genre methods in ampachedata first
+- **Genre browse.** Needs the genre methods in ampachedata first
   (parked library tier), then a Library section or filter in the app.
 
-- **Session save/restore** — queue survives app close/OOM-kill
-  (Sonic's _saveSessionQueue/_restoreSessionQueue pattern). Nice-to-have;
-  the engine already survives suspension for the current track.
+- **Session save/restore.** Queue survives app close or OOM kill
+  (Sonic's _saveSessionQueue/_restoreSessionQueue pattern). Nice to
+  have; the engine already survives suspension for the current track.
 
-- **Real user avatar** — the app menu currently has a placeholder circle
-  (first letter of username): ampachedata's User domain entity and mapper
-  are skeletons and no user API method exists yet. Landing `getUser` in
-  the library (art URL from the server, UserEntity already has the `art`
-  column) unlocks the real avatar image.
+- **Desktop packaging: AppImage is the desktop release format.** First
+  release and onward, not just a tester stopgap. Flatpak on Flathub is
+  a possible future addition, to revisit when the time comes. The
+  container route was rejected because container audio ignores the
+  host volume knob (each container gets its own Pulse stream).
+  Effort: the AppImage is a session or two (copy prebuilt files from
+  the clickable image into an AppDir, add a launcher, run
+  appimagetool); Flatpak is days of work because Flathub ships no
+  Lomiri Components runtime, so flatpak-builder would rebuild the
+  toolkit from source. Short version: AppImage packages artifacts,
+  Flatpak rebuilds the stack. The AppDir work doubles as the module
+  list for a future Flatpak manifest; recheck Flathub runtime
+  availability whenever Flatpak is picked up. UT clicks need no work.
 
-- **Desktop packaging: AppImage is THE desktop release format** —
-  first release and onward, not just a tester stopgap. Flatpak/
-  Flathub = possible future addition, revisit when the time comes.
-  Container/docker route rejected: container audio ignores host
-  volume (own Pulse stream — his maxed-knob annoyance). Effort:
-  AppImage = a session or two (copy prebuilt files from the clickable
-  image into an AppDir + launcher + appimagetool — the image he
-  trusts daily); Flatpak = days BECAUSE Flathub has no Lomiri
-  Components runtime → flatpak-builder rebuilds the toolkit from
-  source. One-liner: AppImage packages artifacts, Flatpak rebuilds
-  the stack. The AppDir work doubles as the future Flatpak
-  manifest's module list; re-check Flathub runtime availability
-  whenever Flatpak is picked up. UT clicks need no work (already
-  one-file installers).
+- **UI Scale "System default" row.** The shipped scale section stores
+  an explicit choice only; the initial state is unset (the launcher
+  exports nothing and the session or compositor value applies, Qt
+  default on plain machines). A "System default" row would follow the
+  Theme section's "System" precedent: remove the uiScale key, export
+  nothing, the dot sits there when unset. Parked 2026-09-25 with the
+  feature working.
 
-- **Bitcoin donation link** — pending verification that UT opens
-  `bitcoin:` wallet URIs from apps; owner unsure, revisit later.
+- **Bitcoin donation link.** Pending verification that UT opens
+  `bitcoin:` wallet URIs from apps; revisit later.
 
-- **About page version on the phone** — the version string renders on
+- **About page version on the phone.** The version string renders on
   desktop but stays empty on phone installs. Two mechanisms attempted
-  and parked on 2026-09-24 (bridge walk-up, QML XMLHttpRequest) — both
+  and parked on 2026-09-24 (bridge walk-up, QML XMLHttpRequest); both
   work on desktop, neither on device. Very minor; needs on-device
   debugging (XHR status log) when anyone picks it up.
 
-- **Login crash guard** — first-login after entering credentials can
-  crash (seen once in clickable desktop, 2026-09-24; not reproducible
-  on demand since). Credentials ARE stored before the crash, so a
-  restart lands logged-in. Suspected uncaught exception in the
-  login→error-page transition. Action when picked up: capture a log
-  first (owner will hand one over when it recurs), then wrap the
-  login/auth flow + page transition in a guarded try/catch that
-  logs the exception instead of dying.
-
 ## Notes
 
-- The settings menu itself (avatar dropdown, Settings page, About page)
-  is the current active feature — not on this list.
-- Engine `engine:` log breadcrumbs stay until store release (owner
-  decision, separate from this roadmap).
+- Engine `engine:` log breadcrumbs stay until store release.

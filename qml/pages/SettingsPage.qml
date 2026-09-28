@@ -30,6 +30,7 @@ Page {
     // Theme: applied LIVE via Theme.name; 'system' = platform default
     // (phone-only semantics; desktop has no platform theme).
     property string currentTheme: ''
+    property string currentScale: '1'
     function themeName(value) {
         if (value === 'dark') {
             return 'Lomiri.Components.Themes.SuruDark'
@@ -102,6 +103,46 @@ Page {
                         height: units.gu(1.5)
                         radius: width / 2
                         visible: settingsPage.currentTheme === modelData.value
+                        color: theme.palette.normal.baseText
+                    }
+                }
+            }
+
+            Header { text: i18n.tr('UI Scale (desktop only)') }
+
+            Repeater {
+                model: [
+                    { label: i18n.tr('100%'), value: '1' },
+                    { label: i18n.tr('150%'), value: '1.5' },
+                    { label: i18n.tr('170%'), value: '1.7' },
+                    { label: i18n.tr('200%'), value: '2' }
+                ]
+                delegate: Standard {
+                    text: modelData.label
+                    onClicked: {
+                        settingsPage.currentScale = modelData.value
+                        settingsPage.pythonBridge.call(
+                            'bridge.setScaleSetting',
+                            [modelData.value],
+                            function(result) {
+                                if (result && result.ok) {
+                                    PopupUtils.open(scaleRestartDialogComponent)
+                                } else {
+                                    console.log('settings: scale save failed: '
+                                                + (result ? result.message : 'null'))
+                                }
+                            })
+                    }
+                    Rectangle {
+                        anchors {
+                            right: parent.right
+                            rightMargin: units.gu(2)
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: units.gu(1.5)
+                        height: units.gu(1.5)
+                        radius: width / 2
+                        visible: settingsPage.currentScale === modelData.value
                         color: theme.palette.normal.baseText
                     }
                 }
@@ -242,6 +283,19 @@ Page {
         }
     }
 
+    Component {
+        id: scaleRestartDialogComponent
+        Dialog {
+            id: scaleRestartDialog
+            title: i18n.tr('Restart required')
+            text: i18n.tr('Restart the app to apply the new UI scale.')
+            Button {
+                text: i18n.tr('OK')
+                onClicked: PopupUtils.close(scaleRestartDialog)
+            }
+        }
+    }
+
     function doClearCache() {
         pythonBridge.call('bridge.clearCache', [], function(result) {
             if (result && result.ok) {
@@ -268,6 +322,11 @@ Page {
         pythonBridge.call('bridge.getThemeSetting', [], function(result) {
             if (result && result.ok) {
                 settingsPage.currentTheme = result.theme
+            }
+        })
+        pythonBridge.call('bridge.getScaleSetting', [], function(result) {
+            if (result && result.ok) {
+                settingsPage.currentScale = result.scale
             }
         })
         pythonBridge.call('bridge.getStreamingQuality', [], function(result) {
