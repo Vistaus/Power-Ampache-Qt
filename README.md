@@ -8,6 +8,15 @@ internet or your LAN. Your music stays on your server, under your
 control. Nothing is locked in and there is no third party service in
 the middle.
 
+## Coming soon
+
+- Star ratings for songs, albums and playlists
+- Playlist creation and editing
+- Per-song context menu
+- Pull-to-refresh on Home and Library
+
+Planned: downloads for offline listening.
+
 ## Features
 
 - Library browsing: playlists, albums, songs and artists, with cover
