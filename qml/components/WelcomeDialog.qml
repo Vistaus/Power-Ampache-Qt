@@ -39,6 +39,13 @@ Dialog {
         color: theme.palette.normal.baseText
         text: i18n.tr('Planned: downloads for offline listening.')
     }
+    Label {
+        width: parent.width
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHLeft
+        color: theme.palette.normal.baseText
+        text: i18n.tr('The app is under active development, with more features on the way. If you run into any issues, please report them and they will be addressed.')
+    }
 
     Button {
         text: i18n.tr("Let's go")
