@@ -45,6 +45,20 @@ MainView {
         pageLayout.primaryPageSource = loginPageComponent
     }
 
+    Timer {
+        id: wideModeDelayTimer
+        interval: 300
+        repeat: false
+        onTriggered: {
+            // Flip only if a home page actually landed: a logout inside
+            // the deferral window must NOT re-enable wide mode on the
+            // login page.
+            if (pageLayout.primaryPageSource === homePageComponent) {
+                root.wideModeAllowed = true
+            }
+        }
+    }
+
     AdaptivePageLayout {
         id: pageLayout
         anchors {
@@ -142,8 +156,8 @@ MainView {
                     })
                     python.call('bridge.hasCredentials', [], function(credentialsResult) {
                         if (credentialsResult.ok && credentialsResult.hasCredentials) {
-                            root.wideModeAllowed = true
                             pageLayout.primaryPageSource = homePageComponent
+                            wideModeDelayTimer.restart()
                         } else {
                             root.wideModeAllowed = false
                             pageLayout.primaryPageSource = loginPageComponent
@@ -171,8 +185,8 @@ MainView {
             pythonBridge: python
             authenticatedCallback: function() {
                 root.justAuthenticated = true
-                root.wideModeAllowed = true
                 pageLayout.primaryPageSource = homePageComponent
+                wideModeDelayTimer.restart()
             }
         }
     }
