@@ -29,8 +29,7 @@ Dialog {
         color: theme.palette.normal.baseText
         text: i18n.tr('● Star ratings for songs, albums and playlists') + '\n'
               + i18n.tr('● Playlist creation and editing') + '\n'
-              + i18n.tr('● Per-song context menu') + '\n'
-              + i18n.tr('● Pull-to-refresh on Home and Library')
+              + i18n.tr('● Per-song context menu')
     }
     Label {
         width: parent.width
