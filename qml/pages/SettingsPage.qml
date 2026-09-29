@@ -12,8 +12,9 @@ import "../components"
 // Settings: streaming bitrate (persisted in LocalSettingsEntity, read
 // by the bridge on every stream URL build), cache stats + clear
 // (data tables only — credentials/session rows share the same DB file
-// and MUST survive), and logout at the bottom (destroys credentials +
-// session, returns to the login screen via the injected callback).
+// and MUST survive), and logout at the bottom (destroys the session,
+// credentials and cached music data, returns to the login screen via
+// the injected callback).
 Page {
     id: settingsPage
 

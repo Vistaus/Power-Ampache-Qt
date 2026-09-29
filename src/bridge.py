@@ -27,6 +27,16 @@ _DB_FILE_NAME = 'musicdb.db'
 _DEFAULT_LIMIT = 10
 _SEARCH_PAGE_SIZE = 500
 
+# Cached music data tables: the tables wiped by clearCache() and by
+# logout() (a previous account's rows must never surface for the next
+# one). LocalSettingsEntity/CredentialsEntity/SessionEntity are NOT in
+# this list - logout handles those separately.
+_MUSIC_DATA_TABLES = ['SongEntity', 'AlbumEntity', 'ArtistEntity',
+                      'PlaylistEntity', 'PlaylistSongEntity',
+                      'GenreEntity', 'HistoryEntity',
+                      'RecommendedArtistEntity',
+                      'DownloadedSongEntity']
+
 _threadLocal = threading.local()
 
 # Ids the server reports as having NO art (has_art=0 in the raw
@@ -980,11 +990,7 @@ def clearCache():
         if os.path.exists(dbPath):
             connection = sqlite3.connect(dbPath)
             try:
-                for table in ['SongEntity', 'AlbumEntity', 'ArtistEntity',
-                              'PlaylistEntity', 'PlaylistSongEntity',
-                              'GenreEntity', 'HistoryEntity',
-                              'RecommendedArtistEntity',
-                              'DownloadedSongEntity']:
+                for table in _MUSIC_DATA_TABLES:
                     connection.execute('DELETE FROM ' + table)
                 connection.commit()
             finally:
@@ -995,7 +1001,7 @@ def clearCache():
 
 
 def logout():
-    "Destroy the session (best-effort server goodbye, offline-safe) then delete the local session + credentials rows. The cache DB and LocalSettingsEntity survive. The thread-local client is discarded (goodbye() marks it terminated)."
+    "Destroy the session (best-effort server goodbye, offline-safe), delete the local session + credentials rows, and clear every cached music data table so a previous account's rows never surface after re-login (multi-account cache leak fix). LocalSettingsEntity and the app-owned settings.json survive. The thread-local client is discarded (goodbye() marks it terminated)."
     try:
         client = None
         try:
@@ -1013,9 +1019,13 @@ def logout():
             try:
                 connection.execute('DELETE FROM SessionEntity')
                 connection.execute('DELETE FROM CredentialsEntity')
+                for table in _MUSIC_DATA_TABLES:
+                    connection.execute('DELETE FROM ' + table)
                 connection.commit()
             finally:
                 connection.close()
+        for artlessSet in _ARTLESS_IDS.values():
+            artlessSet.clear()
         _threadLocal.client = None
         return {'ok': True}
     except Exception as exception:
