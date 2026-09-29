@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 19:07+0000\n"
+"POT-Creation-Date: 2026-09-29 19:37+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -176,21 +176,17 @@ msgstr ""
 msgid "● Per-song context menu"
 msgstr ""
 
-#: ../qml/components/WelcomeDialog.qml:33
-msgid "● Pull-to-refresh on Home and Library"
-msgstr ""
-
-#: ../qml/components/WelcomeDialog.qml:40
+#: ../qml/components/WelcomeDialog.qml:39
 msgid "Planned: downloads for offline listening."
 msgstr ""
 
-#: ../qml/components/WelcomeDialog.qml:47
+#: ../qml/components/WelcomeDialog.qml:46
 msgid ""
 "The app is under active development, with more features on the way. If you "
 "run into any issues, please report them and they will be addressed."
 msgstr ""
 
-#: ../qml/components/WelcomeDialog.qml:51
+#: ../qml/components/WelcomeDialog.qml:50
 msgid "Let's go"
 msgstr ""
 
