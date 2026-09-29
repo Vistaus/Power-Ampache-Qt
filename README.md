@@ -8,6 +8,14 @@ internet or your LAN. Your music stays on your server, under your
 control. Nothing is locked in and there is no third party service in
 the middle.
 
+
+| - | - | - |
+|---|---|---|
+| <img width="1080" height="2400" alt="home-screen" src="https://github.com/user-attachments/assets/b86d16d3-6e0e-4880-a1aa-a80bdea8c447" /> | <img width="1080" height="2400" alt="player" src="https://github.com/user-attachments/assets/e0ebe6e6-3250-4f8b-86fb-9b8ea13c1acd" /> | <img width="1080" height="2400" alt="artist" src="https://github.com/user-attachments/assets/48ebea8c-2326-402b-b09f-9f23647d9f22" /> |
+| <img width="1080" height="2400" alt="artists" src="https://github.com/user-attachments/assets/1f6e429c-4d31-49c8-b6fd-a82b5ba5cb97" /> | <img width="1080" height="2400" alt="albums" src="https://github.com/user-attachments/assets/8fa1051d-2693-4b88-af5f-d032b3a29434" /> | <img width="1080" height="2400" alt="album" src="https://github.com/user-attachments/assets/7dab8cd7-ed8e-4391-88b6-dbfaff0832db" /> | 
+| <img width="1080" height="2400" alt="playlists" src="https://github.com/user-attachments/assets/90998a29-2216-4634-acb1-7679bd4fa790" /> | <img width="1080" height="2400" alt="album2" src="https://github.com/user-attachments/assets/f43925f8-a6fe-4153-82f8-2b968739c611" /> | <img width="1080" height="2400" alt="songs" src="https://github.com/user-attachments/assets/f6395487-048e-44dc-83aa-055e541b972e" /> |
+
+
 ## Coming soon
 
 - Star ratings for songs, albums and playlists
