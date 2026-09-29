@@ -48,17 +48,12 @@ addressed.
 
 ## Install
 
-On Ubuntu Touch, download the app from the OpenStore. For the desktop version use Github Releases.
-
-
-
+On Ubuntu Touch, download the app from the OpenStore. On Linux desktop, grab the AppImage from the Github Releases.
 
 | Ubuntu Touch | Desktop |
 |---|---|
 | [![OpenStore](https://open-store.io/badges/en_US.svg)](https://open-store.io/app/powerampache.icefields/) | [Desktop Release](https://github.com/icefields/Power-Ampache-Qt/releases) |
 
-On Linux desktop, grab the AppImage (released alongside the first
-version).
 
 ## Development
 
