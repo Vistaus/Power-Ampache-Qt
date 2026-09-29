@@ -4,25 +4,17 @@ State as of 2026-09-28.
 
 ## Confirmed behavior gaps
 
-1. **Seek works only for MP3 streams.** FLAC and M4A do not seek (the bar
-   jumps, audio does not). Suspected server-side cause, either container
-   index / byte-range support or on-the-fly transcoding producing a live,
-   non-seekable stream, still unverified. Confirm with `curl -sI`
-   comparing `Accept-Ranges` and `Content-Length` between an mp3 and a
-   flac or m4a stream URL. If confirmed, the fix belongs in Ampache's
-   streaming or transcode config, not in QML.
-
-2. **Repeat mode changes mid-queue apply from the next `playFrom()`.**
+1. **Repeat mode changes mid-queue apply from the next `playFrom()`.**
    The playlist shape is fixed at commit (repeat `off` commits the tail
    only; `all` and `one` commit the full rotation), while the
    playbackMode binding is live. Documented limitation.
 
-3. **Repeat `one` replays the same stream URL each loop.** If the server
+2. **Repeat `one` replays the same stream URL each loop.** If the server
    counts plays per stream fetch, listen stats may inflate by one per
    loop. Known design edge (see the engine comment); needs review
    before a store release.
 
-4. **No user-facing playback errors yet.** Stream failures are logged
+3. **No user-facing playback errors yet.** Stream failures are logged
    only (`engine: stream error code=...`); the UI shows nothing. Error
    surfacing is future work.
 
