@@ -806,7 +806,10 @@ class AmpacheClient:
         """flag: mark/unmark a library item as favorite (interaction tier —
         the first MUTATING method family).
 
-        action=flag with filter=objectId, type, flag=1|0, sent via
+        action=flag with id=objectId and filter=objectId (both ride:
+        Ampache reads filter, Nextcloud Music reads id and rejects
+        filter-only with error 4710 - same rationale as _mediaUrl),
+        type, flag=1|0, sent via
         _sendWithAuth (Bearer header; the goodbye terminated-session guard
         applies through ensureSession). The response is a bare success
         envelope — no object data — so on success the object is RE-FETCHED
@@ -818,6 +821,7 @@ class AmpacheClient:
         typed error propagates BEFORE any re-fetch — no DB write happens."""
         objectType = ObjectType(objectType)
         params = {
+            "id": str(objectId),
             "filter": str(objectId),
             "type": objectType.value,
             "flag": "1" if flagged else "0",
@@ -850,6 +854,7 @@ class AmpacheClient:
         if not isinstance(rating, int) or isinstance(rating, bool) or rating < 0 or rating > 5:
             raise ValueError("rating must be an integer between 0 and 5, got " + repr(rating))
         params = {
+            "id": str(objectId),
             "filter": str(objectId),
             "type": objectType.value,
             "rating": str(rating),

@@ -26,6 +26,11 @@ Page {
     property string serverUrl: ''
     property int pendingFetches: 0
     property bool homeSpinnerArmed: false
+    // True only while a PULL-initiated refresh batch runs. PTR's
+    // spinner binds here - never to the shared fetch counter, which
+    // is also true during the initial load batch (the round-one bug
+    // that painted a second spinner over the page on first load).
+    property bool homeManualRefresh: false
     onPendingFetchesChanged: {
         if (pendingFetches > 0) {
             homeSpinnerArmed = false
@@ -33,6 +38,10 @@ Page {
         } else {
             homeSpinnerTimer.stop()
             homeSpinnerArmed = false
+            // The last fetch of ANY batch lands here; a pull rode
+            // this same counter, so this is what releases the PTR
+            // spinner.
+            homeManualRefresh = false
         }
     }
     Timer {
@@ -176,6 +185,12 @@ Page {
                 delegate: homePage.albumRowDelegate
             }
         }
+
+        PullToRefresh {
+            parent: homeFlickable
+            refreshing: homePage.homeManualRefresh
+            onRefresh: homePage.refreshHome()
+        }
     }
 
     ActivityIndicator {
@@ -246,5 +261,21 @@ Page {
             }
             // Any other failure: the row stays empty and hidden.
         })
+    }
+
+    function refreshHome() {
+        // Pull-to-refresh: wipe the six row models and refetch. A
+        // pull during an in-flight batch ADOPTS it - clearing models
+        // while older responses are still landing would stack
+        // duplicate appends. homeManualRefresh keeps the PTR spinner
+        // up until the batch's last fetch lands (the counter watcher
+        // resets it).
+        homeManualRefresh = true
+        if (homePage.pendingFetches > 0) return
+        for (var i = 0; i < sectionRepeater.model.length; i++) {
+            var row = sectionRepeater.itemAt(i)
+            if (row) row.model.clear()
+            loadRow(i, sectionRepeater.model[i].functionName)
+        }
     }
 }

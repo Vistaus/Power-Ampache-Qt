@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: powerampache.icefields\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 17:07+0000\n"
+"POT-Creation-Date: 2026-09-29 19:07+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -275,32 +275,32 @@ msgstr ""
 msgid "Could not open the local database"
 msgstr ""
 
-#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:48
+#: ../qml/pages/ErrorPage.qml:13 ../qml/pages/HomePage.qml:57
 #: ../qml/pages/LoginPage.qml:22 powerampache.desktop.in.h:1
 msgid "Power Ampache"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:169
+#: ../qml/pages/HomePage.qml:178
 msgid "Recently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:170
+#: ../qml/pages/HomePage.qml:179
 msgid "Favourites"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:171
+#: ../qml/pages/HomePage.qml:180
 msgid "Frequently played"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:172
+#: ../qml/pages/HomePage.qml:181
 msgid "Highest rated"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:173
+#: ../qml/pages/HomePage.qml:182
 msgid "Newly added"
 msgstr ""
 
-#: ../qml/pages/HomePage.qml:174
+#: ../qml/pages/HomePage.qml:183
 msgid "Random"
 msgstr ""
 
