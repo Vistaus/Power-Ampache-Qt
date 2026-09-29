@@ -62,19 +62,9 @@ version).
 
 ## Development
 
-The app is Qt/QML on the front end and Python (PyOtherSide) on the
-back end, using the
+The app uses the
 [ampachedata](https://github.com/icefields/Ampache-Data-Library)
-library as its data layer (vendored in `src/ampachedata`). The client
-library talks to the Ampache JSON API and keeps a local SQLite cache.
-
-Build from source with
-[Clickable](https://clickable-ut.dev):
-
-```
-clickable build
-clickable install-phone
-```
+library (by the same developer) as its data layer (vendored in `src/ampachedata`).
 
 ## Links
 
