@@ -56,6 +56,15 @@ Page {
             text: i18n.tr('Connect to your Ampache server')
         }
 
+        Label {
+            width: parent.width
+            wrapMode: Text.Wrap
+            horizontalAlignment: Text.AlignHCenter
+            fontSize: 'small'
+            color: theme.palette.normal.secondaryText
+            text: i18n.tr('Nextcloud Music users: go to the Music app in your Nextcloud > Settings > Ampache and Subsonic, and create your Ampache credentials. The server URL is shown on the same page.')
+        }
+
         TextField {
             id: serverField
             width: parent.width
